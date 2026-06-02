@@ -11,16 +11,19 @@ namespace LoteriaMexicana.UI
 {
     public partial class FormJuego : Form
     {
-        private readonly GestorAudio               _audio              = new GestorAudio();
-        private ClienteLoteria                     _cliente;
-        private ServidorLoteria                    _servidor;
-        private Mazo                               _mazo;
-        private System.Windows.Forms.Timer         _timerCantor;
-        private readonly List<Tablero>             _tableros           = new List<Tablero>();
-        private readonly List<ControladorTablero>  _ctrlTablas         = new List<ControladorTablero>();
-        private string _nombre          = "Jugador";
-        private int    _cantidadTablas  = 1;
-        private bool   _partidaTerminada = false;
+        private readonly GestorAudio _audio = new GestorAudio();
+        private ClienteLoteria _cliente;
+        private ServidorLoteria _servidor;
+        private Mazo _mazo;
+        private System.Windows.Forms.Timer _timerCantor;
+        private readonly List<Tablero> _tableros = new List<Tablero>();
+        private readonly List<ControladorTablero> _ctrlTablas = new List<ControladorTablero>();
+
+        private string _nombre = "Jugador";
+        private int _cantidadTablas = 1;
+        private bool _partidaTerminada = false;
+
+        private bool _cerrandoIntencional = false;
         public FormJuego()
         {
             PedirDatosIniciales();
@@ -28,8 +31,8 @@ namespace LoteriaMexicana.UI
             AplicarTema();
             ConstruirPanelTablas();
             FormBorderStyle = FormBorderStyle.None;
-            WindowState     = FormWindowState.Maximized;
-            KeyPreview      = true;
+            WindowState = FormWindowState.Maximized;
+            KeyPreview = true;
         }
         private void PedirDatosIniciales()
         {
@@ -49,7 +52,8 @@ namespace LoteriaMexicana.UI
         private Tablero PedirTablero(int numero)
         {
             var resp = MessageBox.Show(
-                $"Deseas crear la Tabla {numero} de forma personalizada?\n\nSi = Elige tus 20 cartas\nNo = Tabla aleatoria",
+                $"Deseas crear la Tabla {numero} de forma personalizada?\n\n" +
+                "Si = Elige tus 20 cartas\nNo = Tabla aleatoria",
                 $"Tabla {numero}", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (resp == DialogResult.Yes)
@@ -78,31 +82,33 @@ namespace LoteriaMexicana.UI
         }
         private void AplicarTema()
         {
-            BackColor = Color.FromArgb(83, 143, 143); 
+            BackColor = Color.FromArgb(83, 143, 143);
 
-            panelControl.BackColor      = Color.FromArgb(56, 56, 56);     
-            panelTablas.BackColor       = Color.FromArgb(68, 68, 68);
+            panelControl.BackColor = Color.FromArgb(56, 56, 56);
+            panelTablas.BackColor = Color.FromArgb(68, 68, 68);
             panelHistorialCartas.BackColor = Color.FromArgb(40, 40, 40);
 
-            // Controles del panel izquierdo
-            lblEstado.ForeColor     = Color.FromArgb(220, 220, 220);
-            lblEstado.Font          = new Font("Segoe UI", 9, FontStyle.Bold);
+            lblEstado.ForeColor = Color.FromArgb(220, 220, 220);
+            lblEstado.Font = new Font("Segoe UI", 9, FontStyle.Bold);
             txtIpServidor.BackColor = Color.FromArgb(60, 60, 60);
             txtIpServidor.ForeColor = Color.White;
 
             EstilizarBoton(btnCrearPartida, Color.FromArgb(90, 90, 90));
-            EstilizarBoton(btnUnirse,       Color.FromArgb(90, 90, 90));
-            EstilizarBoton(btnEnviar,       Color.FromArgb(80, 80, 80));
+            EstilizarBoton(btnUnirse, Color.FromArgb(90, 90, 90));
+            EstilizarBoton(btnEnviar, Color.FromArgb(80, 80, 80));
             EstilizarBoton(btnGritarLoteria, Color.FromArgb(180, 40, 40));
+            EstilizarBoton(btnSalir, Color.FromArgb(70, 70, 70));
+
             btnGritarLoteria.Font = new Font("Segoe UI", 13, FontStyle.Bold);
+            btnSalir.Font = new Font("Segoe UI", 8);
 
             picCartaActual.BackColor = Color.FromArgb(30, 30, 30);
 
             txtHistorialChat.BackColor = Color.FromArgb(44, 44, 44);
             txtHistorialChat.ForeColor = Color.FromArgb(202, 202, 202);
-            txtHistorialChat.Font      = new Font("Consolas", 9);
-            txtChatInput.BackColor     = Color.FromArgb(60, 60, 60);
-            txtChatInput.ForeColor     = Color.White;
+            txtHistorialChat.Font = new Font("Consolas", 9);
+            txtChatInput.BackColor = Color.FromArgb(60, 60, 60);
+            txtChatInput.ForeColor = Color.White;
         }
 
         private static void EstilizarBoton(Button b, Color fondo)
@@ -111,32 +117,32 @@ namespace LoteriaMexicana.UI
             b.ForeColor = Color.White;
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 80);
-            b.Cursor    = Cursors.Hand;
+            b.Cursor = Cursors.Hand;
         }
         private void btnCrearPartida_Click(object sender, EventArgs e)
         {
             try
             {
                 _servidor = new ServidorLoteria();
-                _servidor.OnError            += msg => MostrarEnHistorial($"[ERROR SERVIDOR] {msg}");
-                _servidor.OnClienteConectado += ip  => MostrarEnHistorial($"Jugador conectado desde {ip}");
+                _servidor.OnError += msg => MostrarEnHistorial($"[ERROR SERVIDOR] {msg}");
+                _servidor.OnClienteConectado += ip => MostrarEnHistorial($"Jugador conectado desde {ip}");
                 _servidor.Iniciar();
 
                 _mazo = new Mazo();
                 _mazo.Barajar();
                 IniciarTimerCantor();
 
-                string ip     = ObtenerIpLocal();
+                string ip = ObtenerIpLocal();
                 string codigo = IpACodigo(ip);
                 ConectarComoCliente("127.0.0.1");
 
                 ActualizarEstado($"SALA: {codigo}  |  Esperando jugadores...");
                 txtIpServidor.Text = codigo;
 
-                btnCrearPartida.Text   = "Siguiente";
+                btnCrearPartida.Text = "Siguiente";
                 btnCrearPartida.Click -= btnCrearPartida_Click;
                 btnCrearPartida.Click += (s, ev) => CantarSiguienteCarta();
-                btnUnirse.Enabled      = false;
+                btnUnirse.Enabled = false;
             }
             catch (Exception ex)
             {
@@ -156,7 +162,7 @@ namespace LoteriaMexicana.UI
                 ConectarComoCliente(ip);
                 ActualizarEstado($"Conectado a la sala: {entrada.ToUpper()}");
                 btnCrearPartida.Enabled = false;
-                btnUnirse.Enabled       = false;
+                btnUnirse.Enabled = false;
             }
             catch (Exception ex)
             {
@@ -178,8 +184,15 @@ namespace LoteriaMexicana.UI
                     return;
                 }
             }
-            MessageBox.Show("Aun no completas ninguna figura valida!", "Loteria",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(
+                "Aun no completas ninguna figura valida.\n\n" +
+                "Formas de ganar:\n" +
+                "  Linea Horizontal — cualquier fila completa (5 tapas)\n" +
+                "  Linea Vertical   — cualquier columna completa (4 tapas)\n" +
+                "  Diagonal         — diagonal principal o secundaria (4 tapas)\n" +
+                "  Esquinas         — las 4 esquinas\n" +
+                "  Poya / Cruz      — fila central + columna central",
+                "Loteria", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnEnviar_Click(object sender, EventArgs e)
@@ -190,15 +203,33 @@ namespace LoteriaMexicana.UI
             txtChatInput.Clear();
             txtChatInput.Focus();
         }
+        private void btnSalir_Click(object sender, EventArgs e)
+        {
+            var r = MessageBox.Show(
+                "Deseas salir de la partida?",
+                "Salir", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (r == DialogResult.Yes)
+                CerrarLimpio();
+        }
         private void ProcesarMensaje(string mensaje)
         {
-            if (InvokeRequired) { Invoke(new Action<string>(ProcesarMensaje), mensaje); return; }
+            if (_cerrandoIntencional) return;
+
+            if (InvokeRequired)
+            {
+                try { BeginInvoke(new Action<string>(ProcesarMensaje), mensaje); }
+                catch {  }
+                return;
+            }
+
+            if (_disposed) return;
+
             string[] p = mensaje.Split('|');
             switch (p[0])
             {
-                case "CARTA":   ProcesarCarta(p);   break;
-                case "CHAT":    ProcesarChat(p);     break;
-                case "GANADOR": ProcesarGanador(p);  break;
+                case "CARTA": ProcesarCarta(p); break;
+                case "CHAT": ProcesarChat(p); break;
+                case "GANADOR": ProcesarGanador(p); break;
             }
         }
 
@@ -208,11 +239,14 @@ namespace LoteriaMexicana.UI
 
             _audio.ReproducirCarta(id);
 
-            var img = GestorArchivos.CargarImagen(id);
-            picCartaActual.Image?.Dispose();
-            picCartaActual.Image = img;
+            Image imgGrande = GestorArchivos.CargarImagen(id);
+            Image imgMiniatura = GestorArchivos.CargarImagen(id);
 
-            AgregarMiniaturaHistorial(id, img);
+            Image anterior = picCartaActual.Image;
+            picCartaActual.Image = imgGrande;
+            anterior?.Dispose();
+
+            AgregarMiniaturaHistorial(imgMiniatura);
             MostrarEnHistorial($"Carta cantada: #{id}");
 
             for (int t = 0; t < _tableros.Count; t++)
@@ -243,25 +277,26 @@ namespace LoteriaMexicana.UI
         }
         private void IniciarTimerCantor()
         {
-            _timerCantor       = new System.Windows.Forms.Timer { Interval = 10_000 };
+            _timerCantor = new System.Windows.Forms.Timer { Interval = 10_000 };
             _timerCantor.Tick += (s, e) => CantarSiguienteCarta();
             _timerCantor.Start();
         }
 
         private void CantarSiguienteCarta()
         {
+            if (_cerrandoIntencional) return;
             if (_partidaTerminada || _mazo == null || _mazo.EstaAgotado)
             {
                 _timerCantor?.Stop();
-                MostrarEnHistorial("El mazo se agoto.");
+                MostrarEnHistorial("El mazo se agoto. Fin de la partida.");
                 return;
             }
+
             _timerCantor?.Stop();
             _timerCantor?.Start();
+
             var carta = _mazo.SacarCarta();
-            string msg = $"CARTA|{carta.Id}";
-            _servidor?.Transmitir(msg);
-            ProcesarMensaje(msg);
+            _servidor.Transmitir($"CARTA|{carta.Id}");
         }
         private void MostrarEnHistorial(string linea) =>
             txtHistorialChat.AppendText($"[{DateTime.Now:HH:mm:ss}] {linea}{Environment.NewLine}");
@@ -271,22 +306,22 @@ namespace LoteriaMexicana.UI
         private void CongelarJuego()
         {
             btnGritarLoteria.Enabled = false;
-            btnEnviar.Enabled        = false;
-            txtChatInput.Enabled     = false;
+            btnEnviar.Enabled = false;
+            txtChatInput.Enabled = false;
             _timerCantor?.Stop();
         }
 
-        private void AgregarMiniaturaHistorial(int id, Image img)
+        private void AgregarMiniaturaHistorial(Image img)
         {
             if (img == null) return;
             var pic = new PictureBox
             {
-                Size        = new Size(58, 80),
-                SizeMode    = PictureBoxSizeMode.Zoom,
-                Image       = img,
-                Margin      = new Padding(3, 2, 3, 2),
+                Size = new Size(58, 80),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Image = img,
+                Margin = new Padding(3, 2, 3, 2),
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor   = Color.FromArgb(40, 40, 40)
+                BackColor = Color.FromArgb(40, 40, 40)
             };
             panelHistorialCartas.Controls.Add(pic);
             panelHistorialCartas.ScrollControlIntoView(pic);
@@ -295,9 +330,55 @@ namespace LoteriaMexicana.UI
         {
             _cliente = new ClienteLoteria();
             _cliente.OnMensajeRecibido += ProcesarMensaje;
-            _cliente.OnError           += msg => MostrarEnHistorial($"[ERROR RED] {msg}");
-            _cliente.OnDesconectado    += ()  => MostrarEnHistorial("Desconectado del servidor.");
+            _cliente.OnError += msg =>
+            {
+                if (!_cerrandoIntencional)
+                    MostrarEnHistorial($"[ERROR RED] {msg}");
+            };
+            _cliente.OnDesconectado += () =>
+            {
+                if (!_cerrandoIntencional)
+                    MostrarEnHistorial("Desconectado del servidor.");
+            };
             _cliente.Conectar(ip);
+        }
+        private bool _disposed = false;
+
+        private void CerrarLimpio()
+        {
+            if (_cerrandoIntencional) return;
+            _cerrandoIntencional = true;
+
+            _timerCantor?.Stop();
+            _timerCantor?.Dispose();
+            _timerCantor = null;
+
+            _audio.Dispose();
+            try { _cliente?.Desconectar(); } catch { }
+            try { _servidor?.Detener(); } catch { }
+
+            foreach (Control ctrl in panelHistorialCartas.Controls)
+                if (ctrl is PictureBox pic) pic.Image?.Dispose();
+
+            _disposed = true;
+            Close();
+        }
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e.KeyCode == Keys.Escape)
+                btnSalir_Click(null, EventArgs.Empty);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (_cerrandoIntencional)
+            {
+                base.OnFormClosing(e);
+                return;
+            }
+            e.Cancel = true;
+            btnSalir_Click(null, EventArgs.Empty);
         }
         private static string ObtenerIpLocal()
         {
@@ -331,29 +412,10 @@ namespace LoteriaMexicana.UI
                 if (c.Length != 4) return codigo;
                 int s3 = (c[0] - 'A') * 26 + (c[1] - 'A');
                 int s4 = (c[2] - 'A') * 26 + (c[3] - 'A');
-                var p  = ObtenerIpLocal().Split('.');
+                var p = ObtenerIpLocal().Split('.');
                 return $"{p[0]}.{p[1]}.{s3}.{s4}";
             }
             catch { return "127.0.0.1"; }
-        }
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            if (e.KeyCode == Keys.Escape)
-            {
-                var r = MessageBox.Show("Deseas salir del juego?", "Loteria Mexicana",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (r == DialogResult.Yes) Close();
-            }
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            _timerCantor?.Stop();
-            _audio.Dispose();
-            _cliente?.Desconectar();
-            _servidor?.Detener();
-            base.OnFormClosing(e);
         }
     }
 }

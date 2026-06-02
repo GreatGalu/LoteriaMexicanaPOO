@@ -5,27 +5,9 @@ using LoteriaMexicana.Models;
 
 namespace LoteriaMexicana.Core
 {
-    /// <summary>
-    /// Carga y expone el catálogo completo de 54 cartas.
-    /// Lee desde Data/cartas.json si existe; si no, usa el catálogo
-    /// canónico embebido como fallback para no romper el juego.
-    ///
-    /// Formato esperado del JSON:
-    /// [
-    ///   { "id": 1, "nombre": "El Gallo" },
-    ///   ...
-    /// ]
-    ///
-    /// Las rutas de imagen y audio se resuelven dinámicamente
-    /// a través de GestorArchivos, sin almacenarlas en el JSON.
-    /// </summary>
     public static class CatalogoCartas
     {
         private static List<Carta> _cartas;
-
-        /// <summary>
-        /// Devuelve la lista completa de cartas (carga perezosa, una sola vez).
-        /// </summary>
         public static IReadOnlyList<Carta> Todas
         {
             get
@@ -34,27 +16,21 @@ namespace LoteriaMexicana.Core
                 return _cartas;
             }
         }
-
-        /// <summary>Busca una carta por Id. Devuelve null si no existe.</summary>
         public static Carta BuscarPorId(int id) =>
             Todas.FirstOrDefault(c => c.Id == id);
-
-        // ── Carga ─────────────────────────────────────────────────
-
         private static List<Carta> Cargar()
         {
             string json = GestorArchivos.LeerJsonCatalogo();
             if (json != null)
             {
                 try { return DeserializarJson(json); }
-                catch { /* JSON corrupto: usar fallback */ }
+                catch {  }
             }
             return CatalogoCanonico();
         }
 
         private static List<Carta> DeserializarJson(string json)
         {
-            // Estructura mínima del JSON: array de { id, nombre }
             var registros = JsonSerializer.Deserialize<List<RegistroCarta>>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -70,8 +46,6 @@ namespace LoteriaMexicana.Core
             }
             return lista;
         }
-
-        // ── Fallback canónico ─────────────────────────────────────
 
         private static List<Carta> CatalogoCanonico()
         {
@@ -110,7 +84,6 @@ namespace LoteriaMexicana.Core
             return lista;
         }
 
-        // ── DTO interno para deserializar el JSON ─────────────────
         private class RegistroCarta
         {
             public int    Id     { get; set; }

@@ -5,10 +5,6 @@ using LoteriaMexicana.Models;
 
 namespace LoteriaMexicana.Logic
 {
-    /// <summary>
-    /// Administra el mazo completo del servidor (54 cartas).
-    /// Delega el catálogo a CatalogoCartas (lee JSON o usa fallback canonico).
-    /// </summary>
     public class Mazo
     {
         private readonly List<Carta> _cartas;

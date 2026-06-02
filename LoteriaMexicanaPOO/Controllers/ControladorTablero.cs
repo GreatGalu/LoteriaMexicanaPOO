@@ -6,34 +6,19 @@ using LoteriaMexicana.Core;
 
 namespace LoteriaMexicana.Controllers
 {
-    /// <summary>
-    /// Construye el GroupBox visual de un tablero y mantiene sincronizados
-    /// los PictureBox con el estado lógico del Tablero.
-    ///
-    /// Responsabilidades:
-    ///   - Crear el contenedor visual (GroupBox) con los PictureBox de cada casilla.
-    ///   - Aplicar/quitar el efecto "tapa" (overlay semitransparente) al hacer clic.
-    ///   - Actualizar el borde de las casillas cuando una carta es cantada.
-    ///   - Ninguna lógica de victoria ni de red vive aquí.
-    /// </summary>
     public class ControladorTablero
     {
-        // ── Dimensiones de celda ──────────────────────────────────
         private const int ANCHO_CELDA  = 80;
         private const int ALTO_CELDA   = 105;
         private const int ESPACIO      = 4;
         private const int PADDING_IZQUIERDO = 16;
         private const int PADDING_SUPERIOR  = 28;
 
-        // ── Estado ────────────────────────────────────────────────
         private readonly Tablero      _tablero;
         private readonly PictureBox[,] _celdas;
-        private readonly int          _indice;   // 0-based: tabla 1, 2 o 3
+        private readonly int          _indice; 
 
-        // Evento que la UI puede escuchar para reaccionar a cambios de tapa
-        public event Action<int, int, int> OnTapaAlternada; // (indice, fila, col)
-
-        // ── Constructor ───────────────────────────────────────────
+        public event Action<int, int, int> OnTapaAlternada;
 
         public ControladorTablero(Tablero tablero, int indice)
         {
@@ -41,13 +26,6 @@ namespace LoteriaMexicana.Controllers
             _indice  = indice;
             _celdas  = new PictureBox[Tablero.FILAS, Tablero.COLUMNAS];
         }
-
-        // ── Construcción del control visual ──────────────────────
-
-        /// <summary>
-        /// Crea y devuelve el GroupBox completo con todos los PictureBox.
-        /// El llamante solo necesita agregarlo al panel destino.
-        /// </summary>
         public GroupBox ConstruirGrupBox()
         {
             int anchoTotal = PADDING_IZQUIERDO * 2 + (ANCHO_CELDA * Tablero.COLUMNAS) + (ESPACIO * (Tablero.COLUMNAS - 1));
@@ -80,23 +58,12 @@ namespace LoteriaMexicana.Controllers
             return grupo;
         }
 
-        // ── Actualización de estado ───────────────────────────────
-
-        /// <summary>
-        /// Marca una casilla como "carta cantada" (borde iluminado).
-        /// No pone tapa: eso lo decide el jugador al hacer clic.
-        /// </summary>
         public void MarcarCartaCantada(int fila, int col)
         {
             if (!CeldaValida(fila, col)) return;
             _celdas[fila, col].Tag = "cantada";
             AplicarEstiloEstado(_celdas[fila, col], tapada: _tablero.Tapas[fila, col], cantada: true);
         }
-
-        /// <summary>
-        /// Aplica el estado visual completo de todas las celdas de este tablero.
-        /// Útil para refrescar la UI tras cargar un tablero personalizado.
-        /// </summary>
         public void RefrescarVisual()
         {
             for (int f = 0; f < Tablero.FILAS; f++)
@@ -105,9 +72,6 @@ namespace LoteriaMexicana.Controllers
                         tapada:  _tablero.Tapas[f, c],
                         cantada: _tablero.CartasCantadas.Contains(_tablero.Casillas[f, c]));
         }
-
-        // ── Fábrica de celda ──────────────────────────────────────
-
         private PictureBox CrearCelda(int idCarta, int fila, int col)
         {
             var pic = new PictureBox
@@ -124,24 +88,16 @@ namespace LoteriaMexicana.Controllers
                 Tag         = "normal"
             };
 
-            // Si no hay imagen, mostrar el número de carta como fallback
             if (pic.Image == null)
                 pic = CrearCeldaTextoFallback(idCarta, fila, col, pic);
 
-            // Captura de variables para el closure del evento
             int fi = fila, co = col;
             pic.Click += (s, e) => AlternarTapa(fi, co);
 
             return pic;
         }
-
-        /// <summary>
-        /// Fallback visual cuando no existe la imagen en disco:
-        /// muestra un panel gris con el número de carta.
-        /// </summary>
         private PictureBox CrearCeldaTextoFallback(int id, int fila, int col, PictureBox base_pic)
         {
-            // Generamos un Bitmap con el número dibujado
             var bmp = new Bitmap(ANCHO_CELDA, ALTO_CELDA);
             using var g = Graphics.FromImage(bmp);
             g.Clear(Color.FromArgb(55, 55, 58));
@@ -155,9 +111,6 @@ namespace LoteriaMexicana.Controllers
             base_pic.Image = bmp;
             return base_pic;
         }
-
-        // ── Lógica de tapa (sin lógica de negocio, solo visual+delegación) ──
-
         private void AlternarTapa(int fila, int col)
         {
             bool jugadaLegal = _tablero.AlternarTapa(fila, col);
@@ -169,28 +122,19 @@ namespace LoteriaMexicana.Controllers
 
             OnTapaAlternada?.Invoke(_indice, fila, col);
         }
-
-        // ── Estilos visuales ──────────────────────────────────────
-
         private static void AplicarEstiloEstado(PictureBox pic, bool tapada, bool cantada)
         {
             if (tapada)
             {
-                // Tapada: overlay naranja semitransparente sobre la imagen
-                pic.BackColor   = Color.FromArgb(200, 120, 40);  // naranja tapa de botella
+                pic.BackColor   = Color.FromArgb(200, 120, 40);
                 pic.BorderStyle = BorderStyle.Fixed3D;
             }
             else if (cantada)
             {
-                // Cantada pero no tapada: borde verde brillante
                 pic.BackColor   = Color.FromArgb(50, 50, 52);
-                pic.BorderStyle = BorderStyle.Fixed3D;
-                // Dibuja borde verde usando Paint si quisieras más control;
-                // por ahora la diferenciación es por BackColor del borde
-            }
+                pic.BorderStyle = BorderStyle.Fixed3D;            }
             else
             {
-                // Estado normal
                 pic.BackColor   = Color.FromArgb(50, 50, 52);
                 pic.BorderStyle = BorderStyle.FixedSingle;
             }

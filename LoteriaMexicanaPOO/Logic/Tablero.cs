@@ -5,9 +5,6 @@ using System.Linq;
 
 namespace LoteriaMexicana.Logic
 {
-    /// <summary>
-    /// Administra la tabla de juego personal de un jugador (4 filas x 5 columnas).
-    /// </summary>
     public class Tablero
     {
         public const int FILAS          = 4;
@@ -25,9 +22,6 @@ namespace LoteriaMexicana.Logic
             Casillas = new int[FILAS, COLUMNAS];
             Tapas    = new bool[FILAS, COLUMNAS];
         }
-
-        // --- Carga ---
-
         public void GenerarAleatorio()
         {
             var pool = Enumerable.Range(ID_MIN, ID_MAX).ToList();
@@ -40,8 +34,6 @@ namespace LoteriaMexicana.Logic
             LlenarMatriz(pool.Take(TOTAL_CASILLAS).ToArray());
             ReiniciarTapas();
         }
-
-        /// <summary>Carga desde un arreglo de 20 IDs ya validados (FormCrearTabla).</summary>
         public void CargarDesdeIds(int[] ids)
         {
             if (ids == null || ids.Length != TOTAL_CASILLAS)
@@ -70,10 +62,6 @@ namespace LoteriaMexicana.Logic
             ReiniciarTapas();
             return true;
         }
-
-        // --- Juego ---
-
-        /// <summary>Alterna tapa solo si la carta fue cantada. Devuelve true si fue legal.</summary>
         public bool AlternarTapa(int fila, int col)
         {
             int idCarta = Casillas[fila, col];
@@ -96,9 +84,6 @@ namespace LoteriaMexicana.Logic
                     if (Casillas[f, c] == id) return (f, c);
             return (-1, -1);
         }
-
-        // --- Helpers privados ---
-
         private void LlenarMatriz(int[] ids)
         {
             int idx = 0;

@@ -92,7 +92,7 @@ namespace LoteriaMexicana.Network
                 while (_activo && cliente.Connected)
                 {
                     string linea = reader.ReadLine();
-                    if (linea == null) break; // cliente cerró la conexión
+                    if (linea == null) break;
 
                     OnMensajeRecibido?.Invoke(linea);
 
