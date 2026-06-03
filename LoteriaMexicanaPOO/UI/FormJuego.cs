@@ -2,383 +2,186 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using LoteriaMexicana.Controllers;
 using LoteriaMexicana.Core;
 using LoteriaMexicana.Logic;
 using LoteriaMexicana.Network;
+using LoteriaMexicana.UI.UserControls;
 
 namespace LoteriaMexicana.UI
-{
+{ 
     public partial class FormJuego : Form
     {
-        private readonly GestorAudio _audio = new GestorAudio();
-        private ClienteLoteria _cliente;
+        private ClienteLoteria  _cliente;
         private ServidorLoteria _servidor;
-        private Mazo _mazo;
-        private System.Windows.Forms.Timer _timerCantor;
-        private readonly List<Tablero> _tableros = new List<Tablero>();
-        private readonly List<ControladorTablero> _ctrlTablas = new List<ControladorTablero>();
-
-        private string _nombre = "Jugador";
-        private int _cantidadTablas = 1;
-        private bool _partidaTerminada = false;
-
+        private UcPantallaInicio  _ucInicio;
+        private UcPantallaJuego   _ucJuego;
         private bool _cerrandoIntencional = false;
         public FormJuego()
         {
-            PedirDatosIniciales();
             InitializeComponent();
-            AplicarTema();
-            ConstruirPanelTablas();
-            FormBorderStyle = FormBorderStyle.None;
-            WindowState = FormWindowState.Maximized;
-            KeyPreview = true;
+            MontarPantallaInicio();
         }
-        private void PedirDatosIniciales()
+        private void MontarPantallaInicio()
         {
-            string nom = Microsoft.VisualBasic.Interaction.InputBox(
-                "Ingresa tu nombre de jugador:", "Loteria Mexicana", "Jugador1");
-            if (!string.IsNullOrWhiteSpace(nom)) _nombre = nom.Trim();
+            _ucInicio = new UcPantallaInicio();
+            _ucInicio.OnCrearPartida += FlujoCrearPartida;
+            _ucInicio.OnUnirse       += FlujoUnirse;
 
-            string sel = Microsoft.VisualBasic.Interaction.InputBox(
-                "Con cuantas tablas deseas jugar? (1, 2 o 3):", "Tablas", "1");
-            if (!int.TryParse(sel, out _cantidadTablas) || _cantidadTablas < 1 || _cantidadTablas > 3)
-                _cantidadTablas = 1;
-
-            for (int i = 0; i < _cantidadTablas; i++)
-                _tableros.Add(PedirTablero(i + 1));
+            contenedor.Controls.Clear();
+            contenedor.Controls.Add(_ucInicio);
         }
-
-        private Tablero PedirTablero(int numero)
+        private async void FlujoCrearPartida(string nombre, int cantidadTablas)
         {
-            var resp = MessageBox.Show(
-                $"Deseas crear la Tabla {numero} de forma personalizada?\n\n" +
-                "Si = Elige tus 20 cartas\nNo = Tabla aleatoria",
-                $"Tabla {numero}", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var tableros = await PedirTablerosAsync(cantidadTablas);
 
-            if (resp == DialogResult.Yes)
-            {
-                using var frm = new FormCrearTabla();
-                if (frm.ShowDialog() == DialogResult.OK && frm.TableroResultante != null)
-                    return frm.TableroResultante;
-            }
+            _ucJuego = ConstruirUcJuego(nombre, tableros);
+            CambiarPantalla(_ucJuego);
 
-            var t = new Tablero();
-            t.GenerarAleatorio();
-            return t;
-        }
-
-        private void ConstruirPanelTablas()
-        {
-            panelTablas.Controls.Clear();
-            _ctrlTablas.Clear();
-
-            for (int i = 0; i < _tableros.Count; i++)
-            {
-                var ctrl = new ControladorTablero(_tableros[i], i);
-                _ctrlTablas.Add(ctrl);
-                panelTablas.Controls.Add(ctrl.ConstruirGrupBox());
-            }
-        }
-        private void AplicarTema()
-        {
-            BackColor = Color.FromArgb(83, 143, 143);
-
-            panelControl.BackColor = Color.FromArgb(56, 56, 56);
-            panelTablas.BackColor = Color.FromArgb(68, 68, 68);
-            panelHistorialCartas.BackColor = Color.FromArgb(40, 40, 40);
-
-            lblEstado.ForeColor = Color.FromArgb(220, 220, 220);
-            lblEstado.Font = new Font("Segoe UI", 9, FontStyle.Bold);
-            txtIpServidor.BackColor = Color.FromArgb(60, 60, 60);
-            txtIpServidor.ForeColor = Color.White;
-
-            EstilizarBoton(btnCrearPartida, Color.FromArgb(90, 90, 90));
-            EstilizarBoton(btnUnirse, Color.FromArgb(90, 90, 90));
-            EstilizarBoton(btnEnviar, Color.FromArgb(80, 80, 80));
-            EstilizarBoton(btnGritarLoteria, Color.FromArgb(180, 40, 40));
-            EstilizarBoton(btnSalir, Color.FromArgb(70, 70, 70));
-
-            btnGritarLoteria.Font = new Font("Segoe UI", 13, FontStyle.Bold);
-            btnSalir.Font = new Font("Segoe UI", 8);
-
-            picCartaActual.BackColor = Color.FromArgb(30, 30, 30);
-
-            txtHistorialChat.BackColor = Color.FromArgb(44, 44, 44);
-            txtHistorialChat.ForeColor = Color.FromArgb(202, 202, 202);
-            txtHistorialChat.Font = new Font("Consolas", 9);
-            txtChatInput.BackColor = Color.FromArgb(60, 60, 60);
-            txtChatInput.ForeColor = Color.White;
-        }
-
-        private static void EstilizarBoton(Button b, Color fondo)
-        {
-            b.BackColor = fondo;
-            b.ForeColor = Color.White;
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 80);
-            b.Cursor = Cursors.Hand;
-        }
-        private void btnCrearPartida_Click(object sender, EventArgs e)
-        {
             try
             {
                 _servidor = new ServidorLoteria();
-                _servidor.OnError += msg => MostrarEnHistorial($"[ERROR SERVIDOR] {msg}");
-                _servidor.OnClienteConectado += ip => MostrarEnHistorial($"Jugador conectado desde {ip}");
+                _servidor.OnError            += msg => _ucJuego?.Invoke(new Action(() =>
+                    MessageBox.Show(msg, "Error Servidor", MessageBoxButtons.OK, MessageBoxIcon.Warning)));
+                _servidor.OnClienteConectado += ip => _ucJuego?.BeginInvoke(new Action(() =>
+                    {  }));
                 _servidor.Iniciar();
 
-                _mazo = new Mazo();
-                _mazo.Barajar();
-                IniciarTimerCantor();
+                _cliente = new ClienteLoteria();
+                _ucJuego.AsignarCliente(_cliente);
+                _cliente.Conectar("127.0.0.1");
 
-                string ip = ObtenerIpLocal();
+                var mazo = new Mazo();
+                mazo.Barajar();
+                _ucJuego.AsignarServidor(_servidor, mazo);
+
+                string ip     = ObtenerIpLocal();
                 string codigo = IpACodigo(ip);
-                ConectarComoCliente("127.0.0.1");
-
-                ActualizarEstado($"SALA: {codigo}  |  Esperando jugadores...");
-                txtIpServidor.Text = codigo;
-
-                btnCrearPartida.Text = "Siguiente";
-                btnCrearPartida.Click -= btnCrearPartida_Click;
-                btnCrearPartida.Click += (s, ev) => CantarSiguienteCarta();
-                btnUnirse.Enabled = false;
+                _ucJuego.MostrarCodigoSala(codigo);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al crear partida:\n{ex.Message}",
+                MessageBox.Show($"Error al crear la partida:\n{ex.Message}",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MontarPantallaInicio();
             }
         }
-
-        private void btnUnirse_Click(object sender, EventArgs e)
+        private async void FlujoUnirse(string nombre, int cantidadTablas, string entradaSala)
         {
-            string entrada = txtIpServidor.Text.Trim();
-            if (string.IsNullOrWhiteSpace(entrada)) return;
+            var tableros = await PedirTablerosAsync(cantidadTablas);
+            _ucJuego     = ConstruirUcJuego(nombre, tableros);
+            CambiarPantalla(_ucJuego);
 
-            string ip = CodigoAIp(entrada);
+            string ip = CodigoAIp(entradaSala);
             try
             {
-                ConectarComoCliente(ip);
-                ActualizarEstado($"Conectado a la sala: {entrada.ToUpper()}");
-                btnCrearPartida.Enabled = false;
-                btnUnirse.Enabled = false;
+                _cliente = new ClienteLoteria();
+                _ucJuego.AsignarCliente(_cliente);
+                _cliente.Conectar(ip);
+                _ucJuego.MostrarConectado(entradaSala.ToUpper());
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"No se pudo conectar:\n{ex.Message}",
+                MessageBox.Show($"No se pudo conectar a {ip}:\n{ex.Message}",
                     "Error de conexion", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MontarPantallaInicio();
             }
         }
-
-        private void btnGritarLoteria_Click(object sender, EventArgs e)
+        private System.Threading.Tasks.Task<List<Tablero>> PedirTablerosAsync(int cantidad)
         {
-            if (_partidaTerminada || _cliente == null) return;
+            return System.Threading.Tasks.Task.FromResult(PedirTableros(cantidad));
+        }
 
-            for (int i = 0; i < _tableros.Count; i++)
+        private List<Tablero> PedirTableros(int cantidad)
+        {
+            var lista = new List<Tablero>();
+
+            for (int i = 0; i < cantidad; i++)
             {
-                string res = ValidadorVictoria.EvaluarTodo(_tableros[i].Tapas);
-                if (res != null)
+                var resp = MessageBox.Show(
+                    $"Tabla {i + 1}: Â¿Deseas crearla de forma personalizada?\n\n" +
+                    "SÃ­  = Elegir mis 20 cartas\nNo = Tabla aleatoria",
+                    $"Tabla {i + 1}", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (resp == DialogResult.Yes)
                 {
-                    _cliente.Enviar($"GANADOR|{_nombre}|{res} (Tabla {i + 1})");
-                    return;
+                    Tablero t = PedirTableroConCreador(i + 1);
+                    lista.Add(t);
+                }
+                else
+                {
+                    var t = new Tablero();
+                    t.GenerarAleatorio();
+                    lista.Add(t);
                 }
             }
-            MessageBox.Show(
-                "Aun no completas ninguna figura valida.\n\n" +
-                "Formas de ganar:\n" +
-                "  Linea Horizontal — cualquier fila completa (5 tapas)\n" +
-                "  Linea Vertical   — cualquier columna completa (4 tapas)\n" +
-                "  Diagonal         — diagonal principal o secundaria (4 tapas)\n" +
-                "  Esquinas         — las 4 esquinas\n" +
-                "  Poya / Cruz      — fila central + columna central",
-                "Loteria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return lista;
         }
+        private Tablero PedirTableroConCreador(int numero)
+        {
+            Tablero resultado = null;
+            bool terminado = false;
 
-        private void btnEnviar_Click(object sender, EventArgs e)
-        {
-            string txt = txtChatInput.Text.Trim();
-            if (string.IsNullOrWhiteSpace(txt) || _cliente == null) return;
-            _cliente.Enviar($"CHAT|{_nombre}|{txt}");
-            txtChatInput.Clear();
-            txtChatInput.Focus();
-        }
-        private void btnSalir_Click(object sender, EventArgs e)
-        {
-            var r = MessageBox.Show(
-                "Deseas salir de la partida?",
-                "Salir", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (r == DialogResult.Yes)
-                CerrarLimpio();
-        }
-        private void ProcesarMensaje(string mensaje)
-        {
-            if (_cerrandoIntencional) return;
+            var ucCreador = new UcCreadorTablas(numero);
 
-            if (InvokeRequired)
+            ucCreador.OnTablaConfirmada += t =>
             {
-                try { BeginInvoke(new Action<string>(ProcesarMensaje), mensaje); }
-                catch {  }
-                return;
-            }
-
-            if (_disposed) return;
-
-            string[] p = mensaje.Split('|');
-            switch (p[0])
-            {
-                case "CARTA": ProcesarCarta(p); break;
-                case "CHAT": ProcesarChat(p); break;
-                case "GANADOR": ProcesarGanador(p); break;
-            }
-        }
-
-        private void ProcesarCarta(string[] p)
-        {
-            if (p.Length < 2 || !int.TryParse(p[1], out int id)) return;
-
-            _audio.ReproducirCarta(id);
-
-            Image imgGrande = GestorArchivos.CargarImagen(id);
-            Image imgMiniatura = GestorArchivos.CargarImagen(id);
-
-            Image anterior = picCartaActual.Image;
-            picCartaActual.Image = imgGrande;
-            anterior?.Dispose();
-
-            AgregarMiniaturaHistorial(imgMiniatura);
-            MostrarEnHistorial($"Carta cantada: #{id}");
-
-            for (int t = 0; t < _tableros.Count; t++)
-            {
-                if (!_tableros[t].CartasCantadas.Contains(id))
-                    _tableros[t].CartasCantadas.Add(id);
-
-                var (fila, col) = _tableros[t].BuscarId(id);
-                if (fila != -1)
-                    _ctrlTablas[t].MarcarCartaCantada(fila, col);
-            }
-        }
-
-        private void ProcesarChat(string[] p)
-        {
-            if (p.Length < 3) return;
-            MostrarEnHistorial($"[{p[1]}]: {p[2]}");
-        }
-
-        private void ProcesarGanador(string[] p)
-        {
-            if (p.Length < 3) return;
-            _partidaTerminada = true;
-            CongelarJuego();
-            MessageBox.Show($"LOTERIA!\n\n{p[1]} gano con: {p[2]}",
-                "Fin de la partida!", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            MostrarEnHistorial($"{p[1]} gano con {p[2]}.");
-        }
-        private void IniciarTimerCantor()
-        {
-            _timerCantor = new System.Windows.Forms.Timer { Interval = 10_000 };
-            _timerCantor.Tick += (s, e) => CantarSiguienteCarta();
-            _timerCantor.Start();
-        }
-
-        private void CantarSiguienteCarta()
-        {
-            if (_cerrandoIntencional) return;
-            if (_partidaTerminada || _mazo == null || _mazo.EstaAgotado)
-            {
-                _timerCantor?.Stop();
-                MostrarEnHistorial("El mazo se agoto. Fin de la partida.");
-                return;
-            }
-
-            _timerCantor?.Stop();
-            _timerCantor?.Start();
-
-            var carta = _mazo.SacarCarta();
-            _servidor.Transmitir($"CARTA|{carta.Id}");
-        }
-        private void MostrarEnHistorial(string linea) =>
-            txtHistorialChat.AppendText($"[{DateTime.Now:HH:mm:ss}] {linea}{Environment.NewLine}");
-
-        private void ActualizarEstado(string texto) => lblEstado.Text = texto;
-
-        private void CongelarJuego()
-        {
-            btnGritarLoteria.Enabled = false;
-            btnEnviar.Enabled = false;
-            txtChatInput.Enabled = false;
-            _timerCantor?.Stop();
-        }
-
-        private void AgregarMiniaturaHistorial(Image img)
-        {
-            if (img == null) return;
-            var pic = new PictureBox
-            {
-                Size = new Size(58, 80),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Image = img,
-                Margin = new Padding(3, 2, 3, 2),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(40, 40, 40)
+                resultado = t;
+                terminado = true;
             };
-            panelHistorialCartas.Controls.Add(pic);
-            panelHistorialCartas.ScrollControlIntoView(pic);
-        }
-        private void ConectarComoCliente(string ip)
-        {
-            _cliente = new ClienteLoteria();
-            _cliente.OnMensajeRecibido += ProcesarMensaje;
-            _cliente.OnError += msg =>
+            ucCreador.OnCancelado += () =>
             {
-                if (!_cerrandoIntencional)
-                    MostrarEnHistorial($"[ERROR RED] {msg}");
+                terminado = true;
             };
-            _cliente.OnDesconectado += () =>
-            {
-                if (!_cerrandoIntencional)
-                    MostrarEnHistorial("Desconectado del servidor.");
-            };
-            _cliente.Conectar(ip);
-        }
-        private bool _disposed = false;
 
+            contenedor.Controls.Clear();
+            contenedor.Controls.Add(ucCreador);
+            while (!terminado)
+                Application.DoEvents();
+
+            if (resultado == null)
+            {
+                resultado = new Tablero();
+                resultado.GenerarAleatorio();
+            }
+            return resultado;
+        }
+        private UcPantallaJuego ConstruirUcJuego(string nombre, List<Tablero> tableros)
+        {
+            var uc = new UcPantallaJuego();
+            uc.Configurar(nombre, tableros);
+            uc.OnSolicitarSalida += CerrarLimpio;
+            return uc;
+        }
+
+        private void CambiarPantalla(UserControl siguiente)
+        {
+            contenedor.Controls.Clear();
+            contenedor.Controls.Add(siguiente);
+        }
         private void CerrarLimpio()
         {
             if (_cerrandoIntencional) return;
             _cerrandoIntencional = true;
 
-            _timerCantor?.Stop();
-            _timerCantor?.Dispose();
-            _timerCantor = null;
-
-            _audio.Dispose();
-            try { _cliente?.Desconectar(); } catch { }
-            try { _servidor?.Detener(); } catch { }
-
-            foreach (Control ctrl in panelHistorialCartas.Controls)
-                if (ctrl is PictureBox pic) pic.Image?.Dispose();
-
-            _disposed = true;
+            _ucJuego?.LiberarRecursos();
             Close();
-        }
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            if (e.KeyCode == Keys.Escape)
-                btnSalir_Click(null, EventArgs.Empty);
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (_cerrandoIntencional)
-            {
-                base.OnFormClosing(e);
-                return;
-            }
+            if (_cerrandoIntencional) { base.OnFormClosing(e); return; }
             e.Cancel = true;
-            btnSalir_Click(null, EventArgs.Empty);
+            CerrarLimpio();
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e.KeyCode == Keys.Escape && _ucJuego != null)
+            {
+                _ucJuego.LiberarRecursos();
+                CerrarLimpio();
+            }
         }
         private static string ObtenerIpLocal()
         {
@@ -412,7 +215,7 @@ namespace LoteriaMexicana.UI
                 if (c.Length != 4) return codigo;
                 int s3 = (c[0] - 'A') * 26 + (c[1] - 'A');
                 int s4 = (c[2] - 'A') * 26 + (c[3] - 'A');
-                var p = ObtenerIpLocal().Split('.');
+                var p  = ObtenerIpLocal().Split('.');
                 return $"{p[0]}.{p[1]}.{s3}.{s4}";
             }
             catch { return "127.0.0.1"; }

@@ -1,19 +1,24 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace LoteriaMexicana.Core
 {
+
     public class GestorAudio : IDisposable
     {
         [DllImport("winmm.dll", CharSet = CharSet.Auto)]
         private static extern int mciSendString(
-            string command, System.Text.StringBuilder returnString,
-            int returnLength, IntPtr hwndCallback);
+            string lpstrCommand,
+            StringBuilder lpstrReturnString,
+            int uReturnLength,
+            IntPtr hwndCallback);
 
         private const string ALIAS = "loteria_carta";
         private bool _disposed = false;
+
         private CancellationTokenSource _cts = new CancellationTokenSource();
         public void ReproducirCarta(int id)
         {
@@ -48,7 +53,6 @@ namespace LoteriaMexicana.Core
                 int ret = mciSendString(
                     $"open \"{ruta}\" alias {ALIAS}",
                     null, 0, IntPtr.Zero);
-
                 if (ret != 0) return;
 
                 if (token.IsCancellationRequested)
@@ -58,12 +62,11 @@ namespace LoteriaMexicana.Core
                 }
 
                 Enviar($"play {ALIAS}");
-                for (int i = 0; i < 150; i++)
+                var sb = new StringBuilder(128);
+                for (int i = 0; i < 150 && !token.IsCancellationRequested; i++)
                 {
-                    if (token.IsCancellationRequested) break;
                     Thread.Sleep(200);
-
-                    var sb = new System.Text.StringBuilder(128);
+                    sb.Clear();
                     mciSendString($"status {ALIAS} mode", sb, 128, IntPtr.Zero);
                     if (sb.ToString().Trim() == "stopped") break;
                 }
@@ -75,7 +78,6 @@ namespace LoteriaMexicana.Core
             {
             }
         }
-
         private static void Enviar(string cmd)
         {
             try { mciSendString(cmd, null, 0, IntPtr.Zero); }
@@ -85,8 +87,10 @@ namespace LoteriaMexicana.Core
         {
             if (_disposed) return;
             _disposed = true;
-            Detener();
+            _cts?.Cancel();
             _cts?.Dispose();
+            Enviar($"stop {ALIAS}");
+            Enviar($"close {ALIAS}");
         }
     }
-} 
+}
