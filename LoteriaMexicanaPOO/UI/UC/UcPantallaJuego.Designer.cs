@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace LoteriaMexicana.UI.UserControls
@@ -12,218 +12,303 @@ namespace LoteriaMexicana.UI.UserControls
             base.Dispose(disposing);
         }
 
-        internal Panel            panelIzquierdo;
-        internal Label            lblEstado;
-        internal TextBox          txtSala;
-        internal Button           btnAccionRed;
-        internal Button           btnUnirse;
-        internal Button           btnSalir;
-        internal PictureBox       picCartaActual;
-        internal Button           btnGritarLoteria;
-        internal TextBox          txtHistorialChat;
-        internal TextBox          txtChatInput;
-        internal Button           btnEnviar;
-        internal FlowLayoutPanel  panelTablas;
-        internal FlowLayoutPanel  panelHistorialCartas;
-        private  Label            lblHistorialTitulo;
+        internal Panel panelIzquierdo;
+        internal Label lblEstado;
+        internal TextBox txtSala;
+        internal Button btnAccionRed;
+        internal Button btnUnirse;
+        internal Button btnSalir;
+        internal PictureBox picCartaActual;
+        internal Button btnGritarLoteria;
+        internal TextBox txtHistorialChat;
+        internal TextBox txtChatInput;
+        internal Button btnEnviar;
+        internal FlowLayoutPanel panelTablas;
+        internal FlowLayoutPanel panelHistorialCartas;
+        internal Label lblHistorialTitulo;
+        private Panel panelConexion;
+        private Panel panelChat;
 
         private void InitializeComponent()
         {
-            components           = new System.ComponentModel.Container();
-            panelIzquierdo       = new Panel();
-            lblEstado            = new Label();
-            txtSala              = new TextBox();
-            btnAccionRed         = new Button();
-            btnUnirse            = new Button();
-            btnSalir             = new Button();
-            picCartaActual       = new PictureBox();
-            btnGritarLoteria     = new Button();
-            txtHistorialChat     = new TextBox();
-            txtChatInput         = new TextBox();
-            btnEnviar            = new Button();
-            panelTablas          = new FlowLayoutPanel();
+            panelIzquierdo = new Panel();
+            txtHistorialChat = new TextBox();
+            panelChat = new Panel();
+            txtChatInput = new TextBox();
+            btnEnviar = new Button();
+            btnGritarLoteria = new Button();
+            picCartaActual = new PictureBox();
+            panelConexion = new Panel();
+            txtSala = new TextBox();
+            btnAccionRed = new Button();
+            btnUnirse = new Button();
+            btnSalir = new Button();
+            lblEstado = new Label();
+            panelTablas = new FlowLayoutPanel();
             panelHistorialCartas = new FlowLayoutPanel();
-            lblHistorialTitulo   = new Label();
-
-            this.SuspendLayout();
-
-            this.Dock      = DockStyle.Fill;
-            this.BackColor = Color.FromArgb(24, 24, 26);
-
-            panelIzquierdo.Dock      = DockStyle.Left;
-            panelIzquierdo.Width     = 295;
+            lblHistorialTitulo = new Label();
+            panelIzquierdo.SuspendLayout();
+            panelChat.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)picCartaActual).BeginInit();
+            panelConexion.SuspendLayout();
+            panelHistorialCartas.SuspendLayout();
+            SuspendLayout();
+            // 
+            // panelIzquierdo
+            // 
             panelIzquierdo.BackColor = Color.FromArgb(32, 32, 36);
-            panelIzquierdo.Padding   = new Padding(10);
-
-            lblEstado.Text      = "Sin conexion";
-            lblEstado.Font      = ResolverFuente(9, FontStyle.Bold);
-            lblEstado.ForeColor = Color.FromArgb(200, 200, 205);
-            lblEstado.Dock      = DockStyle.Top;
-            lblEstado.Height    = 22;
-
-            var panelConexion = new FlowLayoutPanel
-            {
-                Dock          = DockStyle.Top,
-                Height        = 34,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents  = false,
-                BackColor     = Color.Transparent,
-                Padding       = new Padding(0, 2, 0, 2)
-            };
-
-            AplicarEstiloInput(txtSala, "Sala");
-            txtSala.Width  = 76;
-            txtSala.Margin = new Padding(0, 3, 3, 0);
-
-            AplicarEstiloBotonPequeno(btnAccionRed, "Crear",   Color.FromArgb(55, 100, 55));
-            AplicarEstiloBotonPequeno(btnUnirse,    "Unirse",  Color.FromArgb(45, 80, 130));
-            AplicarEstiloBotonPequeno(btnSalir,     "Salir",   Color.FromArgb(100, 40, 40));
-
-            btnAccionRed.Click += btnAccionRed_ClickCrear;
-            btnUnirse.Click    += (s, e) => { };
-            btnSalir.Click     += btnSalir_Click;
-
-            panelConexion.Controls.AddRange(new Control[]
-                { txtSala, btnAccionRed, btnUnirse, btnSalir });
-
-            picCartaActual.Dock        = DockStyle.Top;
-            picCartaActual.Height      = 226;
-            picCartaActual.SizeMode    = PictureBoxSizeMode.Zoom;
-            picCartaActual.BackColor   = Color.FromArgb(24, 24, 26);
-            picCartaActual.BorderStyle = BorderStyle.None;
-
-            btnGritarLoteria.Text   = "¡ L O T E R Í A !";
-            btnGritarLoteria.Dock   = DockStyle.Top;
-            btnGritarLoteria.Height = 52;
-            btnGritarLoteria.Font   = ResolverFuente(14, FontStyle.Bold);
-            btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
-            btnGritarLoteria.ForeColor = Color.White;
-            btnGritarLoteria.FlatStyle = FlatStyle.Flat;
-            btnGritarLoteria.FlatAppearance.BorderSize = 0;
-            btnGritarLoteria.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 50, 50);
-            btnGritarLoteria.Cursor    = Cursors.Hand;
-            btnGritarLoteria.Margin    = new Padding(0, 6, 0, 6);
-            btnGritarLoteria.Click    += btnGritarLoteria_Click;
-
-            txtHistorialChat.Multiline  = true;
-            txtHistorialChat.ReadOnly   = true;
-            txtHistorialChat.ScrollBars = ScrollBars.Vertical;
-            txtHistorialChat.Dock       = DockStyle.Fill;
-            txtHistorialChat.BackColor  = Color.FromArgb(28, 28, 32);
-            txtHistorialChat.ForeColor  = Color.FromArgb(190, 190, 195);
-            txtHistorialChat.Font       = ResolverFuente(9);
-            txtHistorialChat.BorderStyle = BorderStyle.None;
-
-            var panelChat = new FlowLayoutPanel
-            {
-                Dock          = DockStyle.Bottom,
-                Height        = 36,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents  = false,
-                BackColor     = Color.Transparent
-            };
-
-            AplicarEstiloInput(txtChatInput, "Mensaje...");
-            txtChatInput.Width  = 178;
-            txtChatInput.Height = 28;
-            txtChatInput.Margin = new Padding(0, 4, 4, 0);
-
-            AplicarEstiloBotonPequeno(btnEnviar, "▶", Color.FromArgb(50, 90, 140));
-            btnEnviar.Width  = 42;
-            btnEnviar.Height = 28;
-            btnEnviar.Margin = new Padding(0, 4, 0, 0);
-            btnEnviar.Click += btnEnviar_Click;
-
-            panelChat.Controls.AddRange(new Control[] { txtChatInput, btnEnviar });
-
-            panelIzquierdo.Controls.Add(txtHistorialChat);   // Fill
-            panelIzquierdo.Controls.Add(panelChat);          // Bottom del panel
-            panelIzquierdo.Controls.Add(btnGritarLoteria);   // Top (de abajo hacia arriba)
+            panelIzquierdo.Controls.Add(txtHistorialChat);
+            panelIzquierdo.Controls.Add(panelChat);
+            panelIzquierdo.Controls.Add(btnGritarLoteria);
             panelIzquierdo.Controls.Add(picCartaActual);
             panelIzquierdo.Controls.Add(panelConexion);
             panelIzquierdo.Controls.Add(lblEstado);
-
-            panelHistorialCartas.Dock          = DockStyle.Bottom;
-            panelHistorialCartas.Height        = 38;
-            panelHistorialCartas.FlowDirection = FlowDirection.LeftToRight;
-            panelHistorialCartas.WrapContents  = false;
-            panelHistorialCartas.AutoScroll    = true;
-            panelHistorialCartas.BackColor     = Color.FromArgb(20, 20, 22);
-            panelHistorialCartas.Padding       = new Padding(8, 26, 8, 4);
-
-            lblHistorialTitulo.Text      = "Historial de cartas  (pasa el cursor)";
-            lblHistorialTitulo.Font      = ResolverFuente(8, FontStyle.Bold);
-            lblHistorialTitulo.ForeColor = Color.FromArgb(180, 140, 30);
-            lblHistorialTitulo.AutoSize  = true;
-            lblHistorialTitulo.Location  = new Point(8, 8);
+            panelIzquierdo.Dock = DockStyle.Left;
+            panelIzquierdo.Location = new Point(0, 0);
+            panelIzquierdo.Name = "panelIzquierdo";
+            panelIzquierdo.Padding = new Padding(10, 6, 10, 6);
+            panelIzquierdo.Size = new Size(295, 1080);
+            panelIzquierdo.TabIndex = 2;
+            // 
+            // txtHistorialChat
+            // 
+            txtHistorialChat.BackColor = Color.FromArgb(28, 28, 32);
+            txtHistorialChat.BorderStyle = BorderStyle.None;
+            txtHistorialChat.Dock = DockStyle.Fill;
+            txtHistorialChat.Font = new Font("Consolas", 9F);
+            txtHistorialChat.ForeColor = Color.FromArgb(190, 190, 195);
+            txtHistorialChat.Location = new Point(10, 340);
+            txtHistorialChat.Multiline = true;
+            txtHistorialChat.Name = "txtHistorialChat";
+            txtHistorialChat.ReadOnly = true;
+            txtHistorialChat.ScrollBars = ScrollBars.Vertical;
+            txtHistorialChat.Size = new Size(275, 698);
+            txtHistorialChat.TabIndex = 0;
+            // 
+            // panelChat
+            // 
+            panelChat.BackColor = Color.Transparent;
+            panelChat.Controls.Add(txtChatInput);
+            panelChat.Controls.Add(btnEnviar);
+            panelChat.Dock = DockStyle.Bottom;
+            panelChat.Location = new Point(10, 1038);
+            panelChat.Name = "panelChat";
+            panelChat.Size = new Size(275, 36);
+            panelChat.TabIndex = 1;
+            // 
+            // txtChatInput
+            // 
+            txtChatInput.BackColor = Color.FromArgb(40, 40, 46);
+            txtChatInput.BorderStyle = BorderStyle.FixedSingle;
+            txtChatInput.Font = new Font("Segoe UI", 9F);
+            txtChatInput.ForeColor = Color.White;
+            txtChatInput.Location = new Point(0, 4);
+            txtChatInput.Name = "txtChatInput";
+            txtChatInput.Size = new Size(196, 27);
+            txtChatInput.TabIndex = 0;
+            // 
+            // btnEnviar
+            // 
+            btnEnviar.BackColor = Color.FromArgb(50, 90, 140);
+            btnEnviar.Cursor = Cursors.Hand;
+            btnEnviar.FlatAppearance.BorderSize = 0;
+            btnEnviar.FlatStyle = FlatStyle.Flat;
+            btnEnviar.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            btnEnviar.ForeColor = Color.White;
+            btnEnviar.Location = new Point(200, 7);
+            btnEnviar.Name = "btnEnviar";
+            btnEnviar.Size = new Size(55, 26);
+            btnEnviar.TabIndex = 1;
+            btnEnviar.Text = "Enviar";
+            btnEnviar.UseVisualStyleBackColor = false;
+            btnEnviar.Click += btnEnviar_Click;
+            // 
+            // btnGritarLoteria
+            // 
+            btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
+            btnGritarLoteria.Cursor = Cursors.Hand;
+            btnGritarLoteria.Dock = DockStyle.Top;
+            btnGritarLoteria.FlatAppearance.BorderSize = 0;
+            btnGritarLoteria.FlatStyle = FlatStyle.Flat;
+            btnGritarLoteria.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            btnGritarLoteria.ForeColor = Color.White;
+            btnGritarLoteria.Location = new Point(10, 288);
+            btnGritarLoteria.Name = "btnGritarLoteria";
+            btnGritarLoteria.Size = new Size(275, 52);
+            btnGritarLoteria.TabIndex = 2;
+            btnGritarLoteria.Text = "¡ L O T E R Í A !";
+            btnGritarLoteria.UseVisualStyleBackColor = false;
+            btnGritarLoteria.Click += btnGritarLoteria_Click;
+            // 
+            // picCartaActual
+            // 
+            picCartaActual.BackColor = Color.FromArgb(24, 24, 26);
+            picCartaActual.Dock = DockStyle.Top;
+            picCartaActual.Location = new Point(10, 62);
+            picCartaActual.Name = "picCartaActual";
+            picCartaActual.Size = new Size(275, 226);
+            picCartaActual.SizeMode = PictureBoxSizeMode.Zoom;
+            picCartaActual.TabIndex = 3;
+            picCartaActual.TabStop = false;
+            // 
+            // panelConexion
+            // 
+            panelConexion.BackColor = Color.Transparent;
+            panelConexion.Controls.Add(txtSala);
+            panelConexion.Controls.Add(btnAccionRed);
+            panelConexion.Controls.Add(btnUnirse);
+            panelConexion.Controls.Add(btnSalir);
+            panelConexion.Dock = DockStyle.Top;
+            panelConexion.Location = new Point(10, 28);
+            panelConexion.Name = "panelConexion";
+            panelConexion.Size = new Size(275, 34);
+            panelConexion.TabIndex = 4;
+            // 
+            // txtSala
+            // 
+            txtSala.BackColor = Color.FromArgb(40, 40, 46);
+            txtSala.BorderStyle = BorderStyle.FixedSingle;
+            txtSala.Font = new Font("Segoe UI", 9F);
+            txtSala.ForeColor = Color.White;
+            txtSala.Location = new Point(0, 4);
+            txtSala.Name = "txtSala";
+            txtSala.Size = new Size(76, 27);
+            txtSala.TabIndex = 0;
+            // 
+            // btnAccionRed
+            // 
+            btnAccionRed.BackColor = Color.FromArgb(55, 100, 55);
+            btnAccionRed.Cursor = Cursors.Hand;
+            btnAccionRed.FlatAppearance.BorderSize = 0;
+            btnAccionRed.FlatStyle = FlatStyle.Flat;
+            btnAccionRed.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            btnAccionRed.ForeColor = Color.White;
+            btnAccionRed.Location = new Point(80, 4);
+            btnAccionRed.Name = "btnAccionRed";
+            btnAccionRed.Size = new Size(56, 24);
+            btnAccionRed.TabIndex = 1;
+            btnAccionRed.Text = "Crear";
+            btnAccionRed.UseVisualStyleBackColor = false;
+            btnAccionRed.Click += btnAccionRed_ClickCrear;
+            // 
+            // btnUnirse
+            // 
+            btnUnirse.BackColor = Color.FromArgb(45, 80, 130);
+            btnUnirse.Cursor = Cursors.Hand;
+            btnUnirse.FlatAppearance.BorderSize = 0;
+            btnUnirse.FlatStyle = FlatStyle.Flat;
+            btnUnirse.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            btnUnirse.ForeColor = Color.White;
+            btnUnirse.Location = new Point(140, 4);
+            btnUnirse.Name = "btnUnirse";
+            btnUnirse.Size = new Size(56, 24);
+            btnUnirse.TabIndex = 2;
+            btnUnirse.Text = "Unirse";
+            btnUnirse.UseVisualStyleBackColor = false;
+            // 
+            // btnSalir
+            // 
+            btnSalir.BackColor = Color.FromArgb(100, 40, 40);
+            btnSalir.Cursor = Cursors.Hand;
+            btnSalir.FlatAppearance.BorderSize = 0;
+            btnSalir.FlatStyle = FlatStyle.Flat;
+            btnSalir.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            btnSalir.ForeColor = Color.White;
+            btnSalir.Location = new Point(200, 4);
+            btnSalir.Name = "btnSalir";
+            btnSalir.Size = new Size(56, 24);
+            btnSalir.TabIndex = 3;
+            btnSalir.Text = "Salir";
+            btnSalir.UseVisualStyleBackColor = false;
+            btnSalir.Click += btnSalir_Click;
+            // 
+            // lblEstado
+            // 
+            lblEstado.BackColor = Color.Transparent;
+            lblEstado.Dock = DockStyle.Top;
+            lblEstado.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            lblEstado.ForeColor = Color.FromArgb(200, 200, 205);
+            lblEstado.Location = new Point(10, 6);
+            lblEstado.Name = "lblEstado";
+            lblEstado.Size = new Size(275, 22);
+            lblEstado.TabIndex = 5;
+            lblEstado.Text = "Sin conexion";
+            lblEstado.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // panelTablas
+            // 
+            panelTablas.AutoScroll = true;
+            panelTablas.BackColor = Color.FromArgb(28, 28, 32);
+            panelTablas.Dock = DockStyle.Fill;
+            panelTablas.Location = new Point(295, 0);
+            panelTablas.Name = "panelTablas";
+            panelTablas.Padding = new Padding(20, 16, 20, 16);
+            panelTablas.Size = new Size(1625, 1042);
+            panelTablas.TabIndex = 0;
+            // 
+            // panelHistorialCartas
+            // 
+            panelHistorialCartas.AutoScroll = true;
+            panelHistorialCartas.BackColor = Color.FromArgb(20, 20, 22);
             panelHistorialCartas.Controls.Add(lblHistorialTitulo);
-
-            panelHistorialCartas.MouseEnter += (s, e) =>
-            {
-                panelHistorialCartas.Height = 106;
-                lblHistorialTitulo.Text     = "Historial de cartas cantadas";
-            };
-            panelHistorialCartas.MouseLeave += (s, e) =>
-            {
-                if (!panelHistorialCartas.DisplayRectangle.Contains(
-                        panelHistorialCartas.PointToClient(Cursor.Position)))
-                {
-                    panelHistorialCartas.Height = 38;
-                    lblHistorialTitulo.Text     = "Historial de cartas  (pasa el cursor)";
-                }
-            };
-
-            panelTablas.Dock          = DockStyle.Fill;
-            panelTablas.FlowDirection = FlowDirection.LeftToRight;
-            panelTablas.WrapContents  = true;
-            panelTablas.AutoScroll    = true;
-            panelTablas.BackColor     = Color.FromArgb(28, 28, 32);
-            panelTablas.Padding       = new Padding(20, 16, 20, 16);
-
-            this.Controls.Add(panelTablas);             // Fill
-            this.Controls.Add(panelHistorialCartas);    // Bottom
-            this.Controls.Add(panelIzquierdo);          // Left
-
-            this.ResumeLayout(false);
+            panelHistorialCartas.Dock = DockStyle.Bottom;
+            panelHistorialCartas.Location = new Point(295, 1042);
+            panelHistorialCartas.Name = "panelHistorialCartas";
+            panelHistorialCartas.Padding = new Padding(8, 26, 8, 4);
+            panelHistorialCartas.Size = new Size(1625, 38);
+            panelHistorialCartas.TabIndex = 1;
+            panelHistorialCartas.WrapContents = false;
+            panelHistorialCartas.MouseEnter += PanelHistorial_MouseEnter;
+            panelHistorialCartas.MouseLeave += PanelHistorial_MouseLeave;
+            // 
+            // lblHistorialTitulo
+            // 
+            lblHistorialTitulo.AutoSize = true;
+            lblHistorialTitulo.BackColor = Color.Transparent;
+            lblHistorialTitulo.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblHistorialTitulo.ForeColor = Color.FromArgb(180, 140, 30);
+            lblHistorialTitulo.Location = new Point(11, 26);
+            lblHistorialTitulo.Name = "lblHistorialTitulo";
+            lblHistorialTitulo.Size = new Size(242, 19);
+            lblHistorialTitulo.TabIndex = 0;
+            lblHistorialTitulo.Text = "Historial de cartas  (pasa el cursor)";
+            // 
+            // UcPantallaJuego
+            // 
+            BackColor = Color.FromArgb(24, 24, 26);
+            Controls.Add(panelTablas);
+            Controls.Add(panelHistorialCartas);
+            Controls.Add(panelIzquierdo);
+            Name = "UcPantallaJuego";
+            Size = new Size(1920, 1080);
+            panelIzquierdo.ResumeLayout(false);
+            panelIzquierdo.PerformLayout();
+            panelChat.ResumeLayout(false);
+            panelChat.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)picCartaActual).EndInit();
+            panelConexion.ResumeLayout(false);
+            panelConexion.PerformLayout();
+            panelHistorialCartas.ResumeLayout(false);
+            panelHistorialCartas.PerformLayout();
+            ResumeLayout(false);
         }
 
-        // ── Helpers de estilo ─────────────────────────────────────────────
-
-        private static Font ResolverFuente(float size, FontStyle style = FontStyle.Regular)
+        // Handlers del hover del historial — aqui en el Designer.cs
+        // (son simples, sin lambdas, el disenador los tolera bien)
+        private void PanelHistorial_MouseEnter(object sender, System.EventArgs e)
         {
-            foreach (string nombre in new[] { "Helvetica", "Arial", "Segoe UI" })
+            panelHistorialCartas.Height = 106;
+            lblHistorialTitulo.Text = "Historial de cartas cantadas";
+        }
+
+        private void PanelHistorial_MouseLeave(object sender, System.EventArgs e)
+        {
+            if (!panelHistorialCartas.DisplayRectangle.Contains(
+                    panelHistorialCartas.PointToClient(System.Windows.Forms.Cursor.Position)))
             {
-                try
-                {
-                    using var p = new Font(nombre, 1);
-                    if (p.Name == nombre) return new Font(nombre, size, style);
-                }
-                catch { }
+                panelHistorialCartas.Height = 38;
+                lblHistorialTitulo.Text = "Historial de cartas  (pasa el cursor)";
             }
-            return new Font("Segoe UI", size, style);
-        }
-
-        private static void AplicarEstiloInput(TextBox t, string placeholder)
-        {
-            t.BackColor       = Color.FromArgb(40, 40, 46);
-            t.ForeColor       = Color.White;
-            t.Font            = ResolverFuente(9);
-            t.BorderStyle     = BorderStyle.FixedSingle;
-            t.PlaceholderText = placeholder;
-        }
-
-        private static void AplicarEstiloBotonPequeno(Button b, string texto, Color acento)
-        {
-            b.Text      = texto;
-            b.Font      = ResolverFuente(8, FontStyle.Bold);
-            b.BackColor = acento;
-            b.ForeColor = Color.White;
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderSize = 0;
-            b.Cursor    = Cursors.Hand;
-            b.Width     = 58;
-            b.Height    = 26;
-            b.Margin    = new Padding(0, 3, 3, 0);
         }
     }
 }

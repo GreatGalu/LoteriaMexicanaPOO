@@ -53,7 +53,7 @@ namespace LoteriaMexicana.Network
                 while (_conectado)
                 {
                     
-                    string linea = reader.ReadLine();
+                    string linea = reader.ReadLine(); //SLRRL
                     if (linea == null) break;
                     OnMensajeRecibido?.Invoke(linea);
                 }

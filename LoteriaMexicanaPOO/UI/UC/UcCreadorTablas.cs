@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -11,10 +11,10 @@ namespace LoteriaMexicana.UI.UserControls
     public partial class UcCreadorTablas : UserControl
     {
         public event Action<Tablero> OnTablaConfirmada;
-        public event Action          OnCancelado;
+        public event Action OnCancelado;
 
-        private readonly int[]        _ids    = new int[Tablero.TOTAL_CASILLAS];
-        private int                   _cursor = 0;
+        private readonly int[] _ids = new int[Tablero.TOTAL_CASILLAS];
+        private int _cursor = 0;
         private readonly PictureBox[,] _celdas = new PictureBox[Tablero.FILAS, Tablero.COLUMNAS];
 
         private readonly int _numeroTabla;
@@ -88,21 +88,21 @@ namespace LoteriaMexicana.UI.UserControls
             {
                 for (int c = 0; c < Tablero.COLUMNAS; c++)
                 {
-                    int pos   = f * Tablero.COLUMNAS + c;
+                    int pos = f * Tablero.COLUMNAS + c;
                     var celda = _celdas[f, c];
                     celda.Image?.Dispose();
 
                     if (pos < _cursor)
                     {
-                        int id        = _ids[pos];
-                        celda.Image   = GestorArchivos.CargarImagen(id) ?? GenerarFallback(id);
-                        celda.Tag     = id;
+                        int id = _ids[pos];
+                        celda.Image = GestorArchivos.CargarImagen(id) ?? GenerarFallback(id);
+                        celda.Tag = id;
                         celda.BackColor = Color.FromArgb(45, 45, 50);
                     }
                     else
                     {
-                        celda.Image   = null;
-                        celda.Tag     = -1;
+                        celda.Image = null;
+                        celda.Tag = -1;
                         celda.BackColor = Color.FromArgb(36, 36, 40);
                     }
                 }
@@ -111,7 +111,7 @@ namespace LoteriaMexicana.UI.UserControls
 
         private void ActualizarContador()
         {
-            lblContador.Text     = $"{_cursor} / {Tablero.TOTAL_CASILLAS} seleccionadas";
+            lblContador.Text = $"{_cursor} / {Tablero.TOTAL_CASILLAS} seleccionadas";
             btnConfirmar.Enabled = (_cursor == Tablero.TOTAL_CASILLAS);
         }
 
@@ -123,14 +123,14 @@ namespace LoteriaMexicana.UI.UserControls
                 Image img = GestorArchivos.CargarImagen(carta.Id) ?? GenerarFallback(carta.Id);
                 var pic = new PictureBox
                 {
-                    Size        = new Size(62, 82),
-                    SizeMode    = PictureBoxSizeMode.Zoom,
+                    Size = new Size(62, 82),
+                    SizeMode = PictureBoxSizeMode.Zoom,
                     BorderStyle = BorderStyle.None,
-                    BackColor   = Color.FromArgb(36, 36, 40),
-                    Image       = img,
-                    Cursor      = Cursors.Hand,
-                    Margin      = new Padding(3),
-                    Tag         = carta.Id
+                    BackColor = Color.FromArgb(36, 36, 40),
+                    Image = img,
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(3),
+                    Tag = carta.Id
                 };
                 new ToolTip().SetToolTip(pic, $"[{carta.Id}] {carta.Nombre}");
                 pic.Click += CartaCatalogo_Click;
@@ -145,8 +145,8 @@ namespace LoteriaMexicana.UI.UserControls
             using var g = Graphics.FromImage(bmp);
             g.Clear(Color.FromArgb(42, 42, 48));
             using var f = new Font("Segoe UI", 12, FontStyle.Bold);
-            string  txt    = id.ToString();
-            SizeF   medida = g.MeasureString(txt, f);
+            string txt = id.ToString();
+            SizeF medida = g.MeasureString(txt, f);
             g.DrawString(txt, f, new SolidBrush(Color.FromArgb(160, 160, 165)),
                 (62f - medida.Width) / 2f, (82f - medida.Height) / 2f);
             return bmp;

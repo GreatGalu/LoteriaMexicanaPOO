@@ -1,11 +1,73 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LoteriaMexicana.Logic
 {
     public static class ValidadorVictoria
     {
-        private const int FILAS    = 4;
+        private const int FILAS = 4;
         private const int COLUMNAS = 5;
+        public enum ResultadoValidacion
+        {
+            SinFigura,      
+            Victoria,       
+            Trampa          
+        }
+
+        public class DetalleValidacion
+        {
+            public ResultadoValidacion Resultado { get; init; }
+            public string Figura { get; init; }  
+            public List<int> CartasTrampa { get; init; } = new();
+        }
+        public static DetalleValidacion EvaluarConValidacion(
+            bool[,] tapas,
+            int[,] casillas,
+            List<int> cartasCantadas)
+        {
+            ValidarDimension(tapas);
+
+            string figura = EvaluarTodo(tapas);
+
+            if (figura == null)
+                return new DetalleValidacion { Resultado = ResultadoValidacion.SinFigura };
+
+            var trampa = new List<int>();
+            for (int f = 0; f < FILAS; f++)
+            {
+                for (int c = 0; c < COLUMNAS; c++)
+                {
+                    if (!tapas[f, c]) continue;          
+
+                    int idCarta = casillas[f, c];
+                    if (!cartasCantadas.Contains(idCarta))
+                        trampa.Add(idCarta);
+                }
+            }
+
+            if (trampa.Count > 0)
+                return new DetalleValidacion
+                {
+                    Resultado = ResultadoValidacion.Trampa,
+                    Figura = figura,
+                    CartasTrampa = trampa
+                };
+
+            return new DetalleValidacion
+            {
+                Resultado = ResultadoValidacion.Victoria,
+                Figura = figura
+            };
+        }
+        public static string EvaluarTodo(bool[,] tapas)
+        {
+            if (ValidarLineaHorizontal(tapas)) return "Linea Horizontal";
+            if (ValidarLineaVertical(tapas)) return "Linea Vertical";
+            if (ValidarDiagonal(tapas)) return "Diagonal";
+            if (ValidarEsquinas(tapas)) return "Esquinas";
+            if (ValidarPoyaOCruz(tapas)) return "Poya / Cruz";
+            return null;
+        }
         public static bool ValidarLineaHorizontal(bool[,] tapas)
         {
             ValidarDimension(tapas);
@@ -18,6 +80,7 @@ namespace LoteriaMexicana.Logic
             }
             return false;
         }
+
         public static bool ValidarLineaVertical(bool[,] tapas)
         {
             ValidarDimension(tapas);
@@ -30,6 +93,7 @@ namespace LoteriaMexicana.Logic
             }
             return false;
         }
+
         public static bool ValidarDiagonal(bool[,] tapas)
         {
             ValidarDimension(tapas);
@@ -43,6 +107,7 @@ namespace LoteriaMexicana.Logic
                 if (!tapas[i, COLUMNAS - 1 - i]) { secundaria = false; break; }
             return secundaria;
         }
+
         public static bool ValidarEsquinas(bool[,] tapas)
         {
             ValidarDimension(tapas);
@@ -51,23 +116,14 @@ namespace LoteriaMexicana.Logic
                 && tapas[FILAS - 1, 0]
                 && tapas[FILAS - 1, COLUMNAS - 1];
         }
+
         public static bool ValidarPoyaOCruz(bool[,] tapas)
         {
             ValidarDimension(tapas);
             const int COL_CENTRAL = 2;
             if (FilaCompleta(tapas, 1) && ColumnaCompleta(tapas, COL_CENTRAL)) return true;
             if (FilaCompleta(tapas, 2) && ColumnaCompleta(tapas, COL_CENTRAL)) return true;
-
             return false;
-        }
-        public static string EvaluarTodo(bool[,] tapas)
-        {
-            if (ValidarLineaHorizontal(tapas)) return "Linea Horizontal";
-            if (ValidarLineaVertical(tapas))   return "Linea Vertical";
-            if (ValidarDiagonal(tapas))        return "Diagonal";
-            if (ValidarEsquinas(tapas))        return "Esquinas";
-            if (ValidarPoyaOCruz(tapas))       return "Poya / Cruz";
-            return null;
         }
         private static bool FilaCompleta(bool[,] tapas, int fila)
         {

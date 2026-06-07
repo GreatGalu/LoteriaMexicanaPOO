@@ -1,4 +1,4 @@
-using LoteriaMexicana.Logic;
+﻿using LoteriaMexicana.Logic;
 using System;
 using System.Drawing;
 using System.Windows.Forms;

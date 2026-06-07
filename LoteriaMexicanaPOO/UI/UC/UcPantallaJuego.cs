@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -12,26 +12,24 @@ namespace LoteriaMexicana.UI.UserControls
     public partial class UcPantallaJuego : UserControl
     {
         public event Action OnSolicitarSalida;
-
-        private ClienteLoteria                    _cliente;
-        private ServidorLoteria                   _servidor;
-        private Mazo                              _mazo;
-        private System.Windows.Forms.Timer        _timerCantor;
-        private readonly GestorAudio              _audio = new GestorAudio();
-
-        private readonly List<Tablero>            _tableros   = new List<Tablero>();
+        public event Action<string, string> OnPartidaTerminada;
+        private ClienteLoteria _cliente;
+        private ServidorLoteria _servidor;
+        private Mazo _mazo;
+        private System.Windows.Forms.Timer _timerCantor;
+        private readonly GestorVoz _voz = new GestorVoz();
+        private readonly List<Tablero> _tableros = new List<Tablero>();
         private readonly List<ControladorTablero> _ctrlTablas = new List<ControladorTablero>();
+        private string _nombre = "Jugador";
+        private bool _esAnfitrion = false;
+        private bool _partidaTerminada = false;
 
-        private string _nombre           = "Jugador";
-        private bool   _partidaTerminada = false;
-
+        private readonly Dictionary<int, string> _nombresCartas = new Dictionary<int, string>();
         public UcPantallaJuego()
         {
             InitializeComponent();
+            PrecargarNombresCartas();
         }
-
-
-
         public void Configurar(string nombre, List<Tablero> tableros)
         {
             _nombre = nombre;
@@ -40,83 +38,112 @@ namespace LoteriaMexicana.UI.UserControls
             ConstruirTablas();
         }
 
-        /// <summary>Conecta el cliente de red y suscribe el procesador de mensajes.</summary>
         public void AsignarCliente(ClienteLoteria cliente)
         {
             _cliente = cliente;
             _cliente.OnMensajeRecibido += ProcesarMensaje;
-            _cliente.OnError           += msg => MostrarEnHistorial($"[ERROR RED] {msg}");
-            _cliente.OnDesconectado    += ()  => MostrarEnHistorial("Desconectado del servidor.");
+            _cliente.OnError += msg => MostrarEnHistorial($"[ERROR RED] {msg}");
+            _cliente.OnDesconectado += () => MostrarEnHistorial("Desconectado del servidor.");
         }
 
-        /// <summary>
-        /// Asigna el servidor y mazo (solo lo llama el Anfitri­on).
-        /// Inicia el timer automatico de cartas.
-        /// </summary>
         public void AsignarServidor(ServidorLoteria servidor, Mazo mazo)
         {
             _servidor = servidor;
-            _mazo     = mazo;
+            _mazo = mazo;
+            _esAnfitrion = true;
             IniciarTimerCantor();
 
-            // Cambiar boton "Crear" → "Siguiente carta"
-            btnAccionRed.Text   = "Siguiente ▶";
+            btnAccionRed.Text = "Siguiente ▶";
             btnAccionRed.Click -= btnAccionRed_ClickCrear;
             btnAccionRed.Click += (s, e) => CantarSiguienteCarta();
-            btnUnirse.Enabled   = false;
+            btnUnirse.Enabled = false;
         }
 
         public void MostrarCodigoSala(string codigo)
         {
-            lblEstado.Text     = $"SALA: {codigo}  |  Esperando jugadores...";
-            txtSala.Text       = codigo;
-            btnAccionRed.Text  = "Siguiente ▶";
+            lblEstado.Text = $"SALA: {codigo}  |  Esperando jugadores...";
+            txtSala.Text = codigo;
+            btnAccionRed.Text = "Siguiente ▶";
         }
 
         public void MostrarConectado(string sala)
         {
-            lblEstado.Text      = $"Conectado a la sala: {sala}";
+            lblEstado.Text = $"Conectado a la sala: {sala}";
             btnAccionRed.Enabled = false;
-            btnUnirse.Enabled    = false;
+            btnUnirse.Enabled = false;
+        }
+        public void ReiniciarPartida(Mazo mazoNuevo)
+        {
+            _mazo = mazoNuevo;
+            _partidaTerminada = false;
+
+            btnGritarLoteria.Enabled = true;
+            btnEnviar.Enabled = true;
+            txtChatInput.Enabled = true;
+           var miniaturas = new System.Collections.Generic.List<PictureBox>();
+            foreach (Control c in panelHistorialCartas.Controls)
+                if (c is PictureBox pb) miniaturas.Add(pb);
+
+            foreach (var pb in miniaturas)
+            {
+                pb.Image?.Dispose();
+                panelHistorialCartas.Controls.Remove(pb);
+                pb.Dispose();
+            }
+
+            picCartaActual.Image?.Dispose();
+            picCartaActual.Image = null;
+
+            ConstruirTablas();
+
+            if (_esAnfitrion)
+                IniciarTimerCantor();
+
+            MostrarEnHistorial("=== Nueva partida iniciada ===");
         }
 
+        public void SolicitarSalida() => btnSalir_Click(null, null);
         private void btnAccionRed_ClickCrear(object sender, EventArgs e) { }
+
         private void btnGritarLoteria_Click(object sender, EventArgs e)
         {
             if (_partidaTerminada || _cliente == null) return;
 
-            // ────────────────────────────────────────────────────────────
-            // FIX DEL VALIDADOR:
-            // Se accede a _tableros[i].Tapas que es la referencia DIRECTA
-            // al mismo objeto Tablero que uso ControladorTablero.
-            // AlternarTapa() ya actualizo Tapas[fila,col] = true cuando el
-            // jugador hizo clic en la celda. EvaluarTodo() lee esa matriz.
-            // ────────────────────────────────────────────────────────────
             for (int i = 0; i < _tableros.Count; i++)
             {
-                bool[,] tapas = _tableros[i].Tapas;   // referencia directa, no copia
-                string resultado = ValidadorVictoria.EvaluarTodo(tapas);
+                var detalle = ValidadorVictoria.EvaluarConValidacion(
+                    _tableros[i].Tapas,
+                    _tableros[i].Casillas,
+                    _tableros[i].CartasCantadas);
 
-                if (resultado != null)
+                switch (detalle.Resultado)
                 {
-                    _cliente.Enviar($"GANADOR|{_nombre}|{resultado} (Tabla {i + 1})");
-                    return;
+                    case ValidadorVictoria.ResultadoValidacion.Victoria:
+                        _cliente.Enviar($"GANADOR|{_nombre}|{detalle.Figura} (Tabla {i + 1})");
+                        return;
+
+                    case ValidadorVictoria.ResultadoValidacion.Trampa:
+                        string ids = string.Join(", #", detalle.CartasTrampa);
+                        MessageBox.Show(
+                            $"Tienes fichas en casillas cuyas cartas aún no han salido.\n\n" +
+                            $"Cartas no cantadas tapadas: #{ids}\n\n" +
+                            "Quita esas fichas y espera a que sean cantadas.",
+                            "Fichas inválidas",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                 }
             }
 
-            // Ninguna figura valida: mostrar pista
             MessageBox.Show(
-                "Aun no completas ninguna figura.\n\n" +
-                "Recuerda:\n" +
-                "• Haz CLIC en la casilla cuando la carta sea cantada para poner la tapa.\n\n" +
+                "Aún no completas ninguna figura.\n\n" +
                 "Formas de ganar:\n" +
-                "  · Linea horizontal  — cualquier fila completa (5 tapas)\n" +
-                "  · Linea vertical    — cualquier columna completa (4 tapas)\n" +
-                "  · Diagonal          — diagonal principal o secundaria (4 tapas)\n" +
+                "  · Línea horizontal  — cualquier fila completa (5 tapas)\n" +
+                "  · Línea vertical    — cualquier columna completa (4 tapas)\n" +
+                "  · Diagonal          — diagonal de 4 celdas\n" +
                 "  · Esquinas          — las 4 esquinas\n" +
-                "  · Poya / Cruz       — fila central + columna del centro",
-                "¡Lotería!",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                "  · Poya / Cruz       — fila central + columna central\n\n" +
+                "Recuerda: haz clic en la casilla para poner la ficha.",
+                "¡Lotería!", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnEnviar_Click(object sender, EventArgs e)
@@ -135,11 +162,6 @@ namespace LoteriaMexicana.UI.UserControls
             if (r == DialogResult.Yes)
                 OnSolicitarSalida?.Invoke();
         }
-
-        // ====================================================================
-        //  PROCESAMIENTO DE MENSAJES DE RED
-        // ====================================================================
-
         private void ProcesarMensaje(string mensaje)
         {
             if (IsDisposed) return;
@@ -153,9 +175,9 @@ namespace LoteriaMexicana.UI.UserControls
             string[] p = mensaje.Split('|');
             switch (p[0])
             {
-                case "CARTA":   ProcesarCarta(p);   break;
-                case "CHAT":    ProcesarChat(p);     break;
-                case "GANADOR": ProcesarGanador(p);  break;
+                case "CARTA": ProcesarCarta(p); break;
+                case "CHAT": ProcesarChat(p); break;
+                case "GANADOR": ProcesarGanador(p); break;
             }
         }
 
@@ -163,10 +185,10 @@ namespace LoteriaMexicana.UI.UserControls
         {
             if (p.Length < 2 || !int.TryParse(p[1], out int id)) return;
 
-            _audio.ReproducirCarta(id);
+            string nombre = _nombresCartas.TryGetValue(id, out string n) ? n : $"carta {id}";
+            _voz.AnunciarCarta(nombre);
 
-            // Dos instancias independientes para evitar el Dispose cruzado
-            Image imgGrande    = GestorArchivos.CargarImagen(id);
+            Image imgGrande = GestorArchivos.CargarImagen(id);
             Image imgMiniatura = GestorArchivos.CargarImagen(id);
 
             Image anterior = picCartaActual.Image;
@@ -174,7 +196,7 @@ namespace LoteriaMexicana.UI.UserControls
             anterior?.Dispose();
 
             AgregarMiniaturaHistorial(imgMiniatura);
-            MostrarEnHistorial($"Carta cantada: #{id}");
+            MostrarEnHistorial($"#{id} — {nombre}");
 
             for (int t = 0; t < _tableros.Count; t++)
             {
@@ -196,18 +218,29 @@ namespace LoteriaMexicana.UI.UserControls
         private void ProcesarGanador(string[] p)
         {
             if (p.Length < 3) return;
+            string ganador = p[1];
+            string figura = p[2];
+
             _partidaTerminada = true;
             CongelarJuego();
-            MessageBox.Show($"¡LOTERÍA!\n\n{p[1]} ganó con: {p[2]}",
-                "¡Fin de la partida!", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            MostrarEnHistorial($"🏆 {p[1]} gano con {p[2]}.");
+            MostrarEnHistorial($"🏆 {ganador} ganó con {figura}.");
+            _voz.AnunciarCarta($"¡Lotería! {ganador} ganó");
+
+            var timer = new System.Windows.Forms.Timer { Interval = 1000 };
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                timer.Dispose();
+                if (!IsDisposed)
+                    OnPartidaTerminada?.Invoke(ganador, figura);
+            };
+            timer.Start();
         }
-
-
-
         private void IniciarTimerCantor()
         {
-            _timerCantor       = new System.Windows.Forms.Timer { Interval = 10_000 };
+            _timerCantor?.Stop();
+            _timerCantor?.Dispose();
+            _timerCantor = new System.Windows.Forms.Timer { Interval = 10_000 };
             _timerCantor.Tick += (s, e) => CantarSiguienteCarta();
             _timerCantor.Start();
         }
@@ -225,14 +258,10 @@ namespace LoteriaMexicana.UI.UserControls
             _timerCantor?.Start();
             _servidor.Transmitir($"CARTA|{_mazo.SacarCarta().Id}");
         }
-
-
-
         private void ConstruirTablas()
         {
             panelTablas.Controls.Clear();
             _ctrlTablas.Clear();
-
             for (int i = 0; i < _tableros.Count; i++)
             {
                 var ctrl = new ControladorTablero(_tableros[i], i);
@@ -247,8 +276,8 @@ namespace LoteriaMexicana.UI.UserControls
         private void CongelarJuego()
         {
             btnGritarLoteria.Enabled = false;
-            btnEnviar.Enabled        = false;
-            txtChatInput.Enabled     = false;
+            btnEnviar.Enabled = false;
+            txtChatInput.Enabled = false;
             _timerCantor?.Stop();
         }
 
@@ -257,28 +286,33 @@ namespace LoteriaMexicana.UI.UserControls
             if (img == null) return;
             var pic = new PictureBox
             {
-                Size        = new Size(58, 80),
-                SizeMode    = PictureBoxSizeMode.Zoom,
-                Image       = img,
-                Margin      = new Padding(3, 2, 3, 2),
+                Size = new Size(58, 80),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Image = img,
+                Margin = new Padding(3, 2, 3, 2),
                 BorderStyle = BorderStyle.None,
-                BackColor   = Color.FromArgb(32, 32, 36)
+                BackColor = Color.FromArgb(32, 32, 36)
             };
             panelHistorialCartas.Controls.Add(pic);
             panelHistorialCartas.ScrollControlIntoView(pic);
         }
 
-        // ====================================================================
-        //  LIMPIEZA DE RECURSOS
-        // ====================================================================
-
+        private void PrecargarNombresCartas()
+        {
+            try
+            {
+                foreach (var carta in CatalogoCartas.Todas)
+                    _nombresCartas[carta.Id] = carta.Nombre;
+            }
+            catch { }
+        }
         public void LiberarRecursos()
         {
             _timerCantor?.Stop();
             _timerCantor?.Dispose();
-            _audio.Dispose();
+            _voz.Dispose();
             try { _cliente?.Desconectar(); } catch { }
-            try { _servidor?.Detener();    } catch { }
+            try { _servidor?.Detener(); } catch { }
             foreach (Control c in panelHistorialCartas.Controls)
                 if (c is PictureBox p) p.Image?.Dispose();
         }
