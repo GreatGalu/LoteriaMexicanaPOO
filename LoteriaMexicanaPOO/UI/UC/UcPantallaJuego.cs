@@ -23,7 +23,6 @@ namespace LoteriaMexicana.UI.UserControls
         private string _nombre = "Jugador";
         private bool _esAnfitrion = false;
         private bool _partidaTerminada = false;
-
         private readonly Dictionary<int, string> _nombresCartas = new Dictionary<int, string>();
         public UcPantallaJuego()
         {
@@ -80,19 +79,22 @@ namespace LoteriaMexicana.UI.UserControls
             btnGritarLoteria.Enabled = true;
             btnEnviar.Enabled = true;
             txtChatInput.Enabled = true;
-           var miniaturas = new System.Collections.Generic.List<PictureBox>();
+            var miniaturas = new System.Collections.Generic.List<PictureBox>();
             foreach (Control c in panelHistorialCartas.Controls)
                 if (c is PictureBox pb) miniaturas.Add(pb);
 
             foreach (var pb in miniaturas)
             {
-                pb.Image?.Dispose();
-                panelHistorialCartas.Controls.Remove(pb);
+                var img = pb.Image;
+                pb.Image = null;                           
+                panelHistorialCartas.Controls.Remove(pb); 
+                img?.Dispose();                           
                 pb.Dispose();
             }
 
-            picCartaActual.Image?.Dispose();
+            var imgGrande = picCartaActual.Image;
             picCartaActual.Image = null;
+            imgGrande?.Dispose();
 
             ConstruirTablas();
 
@@ -101,7 +103,6 @@ namespace LoteriaMexicana.UI.UserControls
 
             MostrarEnHistorial("=== Nueva partida iniciada ===");
         }
-
         public void SolicitarSalida() => btnSalir_Click(null, null);
         private void btnAccionRed_ClickCrear(object sender, EventArgs e) { }
 
@@ -225,7 +226,6 @@ namespace LoteriaMexicana.UI.UserControls
             CongelarJuego();
             MostrarEnHistorial($"🏆 {ganador} ganó con {figura}.");
             _voz.AnunciarCarta($"¡Lotería! {ganador} ganó");
-
             var timer = new System.Windows.Forms.Timer { Interval = 1000 };
             timer.Tick += (s, e) =>
             {

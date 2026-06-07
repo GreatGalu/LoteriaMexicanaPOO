@@ -65,5 +65,10 @@ namespace LoteriaMexicana.UI.UserControls
         {
 
         }
+
+        private void lblSala_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

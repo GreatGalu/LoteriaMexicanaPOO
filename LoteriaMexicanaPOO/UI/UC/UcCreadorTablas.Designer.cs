@@ -1,5 +1,4 @@
 ﻿using LoteriaMexicana.Logic;
-using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -8,6 +7,7 @@ namespace LoteriaMexicana.UI.UserControls
     partial class UcCreadorTablas
     {
         private System.ComponentModel.IContainer components = null;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && components != null) components.Dispose();
@@ -21,10 +21,13 @@ namespace LoteriaMexicana.UI.UserControls
         internal Button btnConfirmar;
         internal Button btnLimpiar;
         internal Button btnAleatorio;
+        private Panel panelSuperior;
+        private Panel panelInferior;
+        private Label lblCatalogoTitulo;
+        private TableLayoutPanel tableLayoutPrincipal;
 
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             lblTituloCreador = new Label();
             lblContador = new Label();
             panelGrid = new Panel();
@@ -32,99 +35,170 @@ namespace LoteriaMexicana.UI.UserControls
             btnConfirmar = new Button();
             btnLimpiar = new Button();
             btnAleatorio = new Button();
-
-            this.SuspendLayout();
-
-            this.Dock = DockStyle.Fill;
-            this.BackColor = Color.FromArgb(24, 24, 26);
-
-            lblTituloCreador.Text = $"TABLA — elige 20 cartas en orden";
-            lblTituloCreador.Font = ResolverFuente(14, FontStyle.Bold);
-            lblTituloCreador.ForeColor = Color.FromArgb(230, 180, 60);
+            panelSuperior = new Panel();
+            panelInferior = new Panel();
+            lblCatalogoTitulo = new Label();
+            tableLayoutPrincipal = new TableLayoutPanel();
+            panelSuperior.SuspendLayout();
+            panelInferior.SuspendLayout();
+            tableLayoutPrincipal.SuspendLayout();
+            SuspendLayout();
+            // 
+            // lblTituloCreador
+            // 
             lblTituloCreador.Dock = DockStyle.Top;
-            lblTituloCreador.Height = 42;
+            lblTituloCreador.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
+            lblTituloCreador.ForeColor = Color.FromArgb(230, 180, 60);
+            lblTituloCreador.Location = new Point(0, 0);
+            lblTituloCreador.Name = "lblTituloCreador";
+            lblTituloCreador.Size = new Size(1920, 36);
+            lblTituloCreador.TabIndex = 1;
+            lblTituloCreador.Text = "TABLA 1 — Elige 20 cartas en orden";
             lblTituloCreador.TextAlign = ContentAlignment.MiddleCenter;
-
-            lblContador.Text = "0 / 20 seleccionadas";
-            lblContador.Font = ResolverFuente(10);
+            // 
+            // lblContador
+            // 
+            lblContador.Dock = DockStyle.Fill;
+            lblContador.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblContador.ForeColor = Color.FromArgb(120, 200, 120);
-            lblContador.Dock = DockStyle.Top;
-            lblContador.Height = 22;
+            lblContador.Location = new Point(0, 36);
+            lblContador.Name = "lblContador";
+            lblContador.Size = new Size(1920, 28);
+            lblContador.TabIndex = 0;
+            lblContador.Text = "0 / 20 seleccionadas";
             lblContador.TextAlign = ContentAlignment.MiddleCenter;
-            var split = new SplitContainer();
-            split.Dock = DockStyle.Fill;
-            split.BackColor = Color.FromArgb(24, 24, 26);
-            split.BorderStyle = BorderStyle.None;
-            split.Panel1MinSize = 50;
-            split.Panel2MinSize = 50;
-            split.Panel1.BackColor = Color.FromArgb(32, 32, 36);
-            split.Panel2.BackColor = Color.FromArgb(28, 28, 32);
-
-            split.SizeChanged += (s, e) =>
-            {
-                if (split.Width <= split.Panel1MinSize + split.Panel2MinSize) return;
-                int distancia = (int)(split.Width * 0.60);
-                distancia = Math.Max(distancia, split.Panel1MinSize);
-                distancia = Math.Min(distancia, split.Width - split.Panel2MinSize);
-                try { split.SplitterDistance = distancia; } catch { }
-            };
-
-            panelGrid.Dock = DockStyle.Fill;
+            // 
+            // panelGrid
+            // 
             panelGrid.BackColor = Color.FromArgb(32, 32, 36);
-            panelGrid.Padding = new Padding(16, 10, 16, 10);
-            ConstruirGrid();
-
-            var panelBotones = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 52,
-                FlowDirection = FlowDirection.RightToLeft,
-                BackColor = Color.FromArgb(28, 28, 32),
-                Padding = new Padding(8, 8, 8, 8)
-            };
-
-            AplicarEstiloBoton(btnConfirmar, "  Confirmar", Color.FromArgb(30, 120, 60));
-            AplicarEstiloBoton(btnLimpiar, "  Limpiar", Color.FromArgb(120, 40, 40));
-            AplicarEstiloBoton(btnAleatorio, "  Aleatorio", Color.FromArgb(60, 60, 80));
-            btnConfirmar.Width = 140;
-            btnLimpiar.Width = 110;
-            btnAleatorio.Width = 120;
-            btnConfirmar.Click += btnConfirmar_Click;
-            btnLimpiar.Click += btnLimpiar_Click;
-            btnAleatorio.Click += btnAleatorio_Click;
-
-            panelBotones.Controls.AddRange(new Control[] { btnConfirmar, btnLimpiar, btnAleatorio });
-
-            split.Panel1.Controls.Add(panelGrid);
-            split.Panel1.Controls.Add(panelBotones);
-
-            var lblCatalogoTitulo = new Label
-            {
-                Text = "CATÁLOGO — haz clic para agregar",
-                Font = ResolverFuente(9, FontStyle.Bold),
-                ForeColor = Color.FromArgb(160, 160, 165),
-                Dock = DockStyle.Top,
-                Height = 28,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-
-            panelCatalogo.Dock = DockStyle.Fill;
+            panelGrid.Location = new Point(0, 0);
+            panelGrid.Margin = new Padding(0);
+            panelGrid.Name = "panelGrid";
+            panelGrid.Size = new Size(929, 961);
+            panelGrid.TabIndex = 0;
+            // 
+            // panelCatalogo
+            // 
             panelCatalogo.AutoScroll = true;
             panelCatalogo.BackColor = Color.FromArgb(28, 28, 32);
-            panelCatalogo.Padding = new Padding(6);
-
-            split.Panel2.Controls.Add(panelCatalogo);
-            split.Panel2.Controls.Add(lblCatalogoTitulo);
-
-            this.Controls.Add(split);
-            this.Controls.Add(lblContador);
-            this.Controls.Add(lblTituloCreador);
-            this.ResumeLayout(false);
+            panelCatalogo.Location = new Point(929, 0);
+            panelCatalogo.Margin = new Padding(0);
+            panelCatalogo.Name = "panelCatalogo";
+            panelCatalogo.Padding = new Padding(12);
+            panelCatalogo.Size = new Size(983, 961);
+            panelCatalogo.TabIndex = 1;
+            // 
+            // btnConfirmar
+            // 
+            btnConfirmar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnConfirmar.BackColor = Color.FromArgb(30, 120, 60);
+            btnConfirmar.Cursor = Cursors.Hand;
+            btnConfirmar.FlatAppearance.BorderSize = 0;
+            btnConfirmar.FlatStyle = FlatStyle.Flat;
+            btnConfirmar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnConfirmar.ForeColor = Color.White;
+            btnConfirmar.Location = new Point(1772, 10);
+            btnConfirmar.Name = "btnConfirmar";
+            btnConfirmar.Size = new Size(140, 32);
+            btnConfirmar.TabIndex = 0;
+            btnConfirmar.Text = "✔ Confirmar";
+            btnConfirmar.UseVisualStyleBackColor = false;
+            // 
+            // btnLimpiar
+            // 
+            btnLimpiar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnLimpiar.BackColor = Color.FromArgb(140, 40, 40);
+            btnLimpiar.Cursor = Cursors.Hand;
+            btnLimpiar.FlatAppearance.BorderSize = 0;
+            btnLimpiar.FlatStyle = FlatStyle.Flat;
+            btnLimpiar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnLimpiar.ForeColor = Color.White;
+            btnLimpiar.Location = new Point(1652, 10);
+            btnLimpiar.Name = "btnLimpiar";
+            btnLimpiar.Size = new Size(110, 32);
+            btnLimpiar.TabIndex = 1;
+            btnLimpiar.Text = "🗑 Limpiar";
+            btnLimpiar.UseVisualStyleBackColor = false;
+            // 
+            // btnAleatorio
+            // 
+            btnAleatorio.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnAleatorio.BackColor = Color.FromArgb(55, 55, 65);
+            btnAleatorio.Cursor = Cursors.Hand;
+            btnAleatorio.FlatAppearance.BorderSize = 0;
+            btnAleatorio.FlatStyle = FlatStyle.Flat;
+            btnAleatorio.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnAleatorio.ForeColor = Color.White;
+            btnAleatorio.Location = new Point(1522, 10);
+            btnAleatorio.Name = "btnAleatorio";
+            btnAleatorio.Size = new Size(120, 32);
+            btnAleatorio.TabIndex = 2;
+            btnAleatorio.Text = "🎲 Aleatorio";
+            btnAleatorio.UseVisualStyleBackColor = false;
+            // 
+            // panelSuperior
+            // 
+            panelSuperior.BackColor = Color.FromArgb(24, 24, 26);
+            panelSuperior.Controls.Add(lblContador);
+            panelSuperior.Controls.Add(lblTituloCreador);
+            panelSuperior.Dock = DockStyle.Top;
+            panelSuperior.Location = new Point(0, 0);
+            panelSuperior.Name = "panelSuperior";
+            panelSuperior.Size = new Size(1920, 64);
+            panelSuperior.TabIndex = 2;
+            // 
+            // panelInferior
+            // 
+            panelInferior.BackColor = Color.FromArgb(20, 20, 22);
+            panelInferior.Controls.Add(btnConfirmar);
+            panelInferior.Controls.Add(btnLimpiar);
+            panelInferior.Controls.Add(btnAleatorio);
+            panelInferior.Dock = DockStyle.Bottom;
+            panelInferior.Location = new Point(0, 1028);
+            panelInferior.Name = "panelInferior";
+            panelInferior.Padding = new Padding(8);
+            panelInferior.Size = new Size(1920, 52);
+            panelInferior.TabIndex = 1;
+            // 
+            // lblCatalogoTitulo
+            // 
+            lblCatalogoTitulo.Location = new Point(0, 0);
+            lblCatalogoTitulo.Name = "lblCatalogoTitulo";
+            lblCatalogoTitulo.Size = new Size(100, 23);
+            lblCatalogoTitulo.TabIndex = 0;
+            // 
+            // tableLayoutPrincipal
+            // 
+            tableLayoutPrincipal.ColumnCount = 2;
+            tableLayoutPrincipal.ColumnStyles.Add(new ColumnStyle());
+            tableLayoutPrincipal.ColumnStyles.Add(new ColumnStyle());
+            tableLayoutPrincipal.Controls.Add(panelGrid, 0, 0);
+            tableLayoutPrincipal.Controls.Add(panelCatalogo, 1, 0);
+            tableLayoutPrincipal.Dock = DockStyle.Fill;
+            tableLayoutPrincipal.Location = new Point(0, 64);
+            tableLayoutPrincipal.Name = "tableLayoutPrincipal";
+            tableLayoutPrincipal.RowCount = 1;
+            tableLayoutPrincipal.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPrincipal.Size = new Size(1920, 964);
+            tableLayoutPrincipal.TabIndex = 0;
+            // 
+            // UcCreadorTablas
+            // 
+            BackColor = Color.FromArgb(24, 24, 26);
+            Controls.Add(tableLayoutPrincipal);
+            Controls.Add(panelInferior);
+            Controls.Add(panelSuperior);
+            Name = "UcCreadorTablas";
+            Size = new Size(1920, 1080);
+            panelSuperior.ResumeLayout(false);
+            panelInferior.ResumeLayout(false);
+            tableLayoutPrincipal.ResumeLayout(false);
+            ResumeLayout(false);
         }
 
         private void ConstruirGrid()
         {
-            const int ancho = 74, alto = 97, esp = 3, padX = 8, padY = 6;
+            const int ancho = 74, alto = 97, esp = 4, padX = 16, padY = 12;
 
             for (int f = 0; f < Tablero.FILAS; f++)
             {
@@ -147,9 +221,9 @@ namespace LoteriaMexicana.UI.UserControls
                     {
                         Text = $"{f * Tablero.COLUMNAS + c + 1}",
                         ForeColor = Color.FromArgb(80, 80, 85),
-                        Font = ResolverFuente(7),
+                        Font = new Font("Segoe UI", 7.5F, FontStyle.Bold),
                         AutoSize = true,
-                        Location = new Point(2, 1),
+                        Location = new Point(3, 2),
                         BackColor = Color.Transparent
                     };
                     pic.Controls.Add(lbl);
@@ -161,33 +235,6 @@ namespace LoteriaMexicana.UI.UserControls
                     panelGrid.Controls.Add(pic);
                 }
             }
-        }
-        private static Font ResolverFuente(float size, FontStyle style = FontStyle.Regular)
-        {
-            foreach (string nombre in new[] { "Helvetica", "Arial", "Segoe UI" })
-            {
-                try
-                {
-                    using var prueba = new Font(nombre, 1);
-                    if (prueba.Name == nombre)
-                        return new Font(nombre, size, style);
-                }
-                catch { }
-            }
-            return new Font("Segoe UI", size, style);
-        }
-
-        private static void AplicarEstiloBoton(Button b, string texto, Color acento)
-        {
-            b.Text = texto;
-            b.Font = ResolverFuente(9, FontStyle.Bold);
-            b.BackColor = acento;
-            b.ForeColor = Color.White;
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderSize = 0;
-            b.Cursor = Cursors.Hand;
-            b.Height = 32;
-            b.Margin = new Padding(4, 0, 0, 0);
         }
     }
 }

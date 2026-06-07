@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 using LoteriaMexicana.Core;
 using LoteriaMexicana.Logic;
@@ -17,6 +18,7 @@ namespace LoteriaMexicana.UI
         private bool _cerrandoIntencional = false;
         private UcPantallaJuego _ucJuego;
         private List<Tablero> _tablerosActivos;
+        private UcPostPartida _overlayPostPartida; 
 
         public FormJuego()
         {
@@ -31,6 +33,8 @@ namespace LoteriaMexicana.UI
 
         private void VolverAlMenu()
         {
+            QuitarOverlayPostPartida();
+
             var ucInicio = new UcPantallaInicio();
             ucInicio.OnCrearPartida += FlujoCrearPartida;
             ucInicio.OnUnirse += FlujoUnirse;
@@ -40,7 +44,6 @@ namespace LoteriaMexicana.UI
         {
             _esAnfitrion = true;
             _tablerosActivos = RecolectarTableros(cantidadTablas);
-
             _ucJuego = ConstruirUcJuego(nombre, _tablerosActivos);
             MontarControl(_ucJuego);
 
@@ -48,18 +51,13 @@ namespace LoteriaMexicana.UI
             {
                 _servidor = new ServidorLoteria();
                 _servidor.Iniciar();
-
                 _mazo = new Mazo();
                 _mazo.Barajar();
-
                 _cliente = new ClienteLoteria();
                 _ucJuego.AsignarCliente(_cliente);
                 _cliente.Conectar("127.0.0.1");
-
                 _ucJuego.AsignarServidor(_servidor, _mazo);
-
-                string codigo = IpACodigo(ObtenerIpLocal());
-                _ucJuego.MostrarCodigoSala(codigo);
+                _ucJuego.MostrarCodigoSala(IpACodigo(ObtenerIpLocal()));
             }
             catch (Exception ex)
             {
@@ -72,7 +70,6 @@ namespace LoteriaMexicana.UI
         {
             _esAnfitrion = false;
             _tablerosActivos = RecolectarTableros(cantidadTablas);
-
             _ucJuego = ConstruirUcJuego(nombre, _tablerosActivos);
             MontarControl(_ucJuego);
 
@@ -96,7 +93,55 @@ namespace LoteriaMexicana.UI
             var uc = new UcPantallaJuego();
             uc.Configurar(nombre, tableros);
             uc.OnSolicitarSalida += CerrarLimpio;
+            uc.OnPartidaTerminada += MostrarOverlayPostPartida;
             return uc;
+        }
+        private void MostrarOverlayPostPartida(string ganador, string figura)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => MostrarOverlayPostPartida(ganador, figura)));
+                return;
+            }
+            QuitarOverlayPostPartida();
+            _overlayPostPartida = new UcPostPartida(ganador, figura, _esAnfitrion);
+            _overlayPostPartida.Size = this.ClientSize;
+            _overlayPostPartida.Location = new Point(0, 0);
+
+            _overlayPostPartida.OnNuevaPartida += () =>
+            {
+                QuitarOverlayPostPartida();
+                if (_mazo != null) { _mazo.Reiniciar(); _mazo.Barajar(); }
+                foreach (var t in _tablerosActivos) t.GenerarAleatorio();
+                _ucJuego?.ReiniciarPartida(_mazo);
+            };
+
+            _overlayPostPartida.OnSalirAlMenu += () =>
+            {
+                QuitarOverlayPostPartida();
+                CerrarLimpio();
+            };
+            this.Controls.Add(_overlayPostPartida);
+            _overlayPostPartida.BringToFront();
+            _overlayPostPartida.CentrarTarjetaPublico();
+        }
+
+        private void QuitarOverlayPostPartida()
+        {
+            if (_overlayPostPartida == null) return;
+            this.Controls.Remove(_overlayPostPartida);
+            _overlayPostPartida.Dispose();
+            _overlayPostPartida = null;
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (_overlayPostPartida != null && !_overlayPostPartida.IsDisposed)
+            {
+                _overlayPostPartida.Size = this.ClientSize;
+                _overlayPostPartida.CentrarTarjetaPublico();
+            }
         }
         private List<Tablero> RecolectarTableros(int cantidad)
         {
@@ -106,7 +151,6 @@ namespace LoteriaMexicana.UI
                 var resp = MessageBox.Show(
                     $"Tabla {i + 1}: ¿Crearla de forma personalizada?\n\nSí = elegir cartas\nNo = aleatoria",
                     $"Tabla {i + 1}", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
                 lista.Add(resp == DialogResult.Yes
                     ? CrearTableroConEditor(i + 1)
                     : CrearTableroAleatorio());
@@ -125,20 +169,18 @@ namespace LoteriaMexicana.UI
         {
             Tablero resultado = null;
             bool terminado = false;
-
             var ucCreador = new UcCreadorTablas(numero);
             ucCreador.OnTablaConfirmada += t => { resultado = t; terminado = true; };
             ucCreador.OnCancelado += () => terminado = true;
-
             MontarControl(ucCreador);
             while (!terminado) Application.DoEvents();
-
             return resultado ?? CrearTableroAleatorio();
         }
         private void CerrarLimpio()
         {
             if (_cerrandoIntencional) return;
             _cerrandoIntencional = true;
+            QuitarOverlayPostPartida();
             _ucJuego?.LiberarRecursos();
             Close();
         }

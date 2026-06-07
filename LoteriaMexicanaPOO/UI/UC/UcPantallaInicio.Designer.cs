@@ -55,7 +55,7 @@ namespace LoteriaMexicana.UI.UserControls
             panelTarjeta.Controls.Add(txtSala);
             panelTarjeta.Controls.Add(btnCrear);
             panelTarjeta.Controls.Add(btnUnirse);
-            panelTarjeta.Location = new Point(491, 275);
+            panelTarjeta.Location = new Point(761, 241);
             panelTarjeta.Name = "panelTarjeta";
             panelTarjeta.Size = new Size(400, 220);
             panelTarjeta.TabIndex = 0;
@@ -165,7 +165,7 @@ namespace LoteriaMexicana.UI.UserControls
             lblTitulo.ForeColor = Color.FromArgb(230, 180, 60);
             lblTitulo.Location = new Point(0, 0);
             lblTitulo.Name = "lblTitulo";
-            lblTitulo.Size = new Size(1366, 70);
+            lblTitulo.Size = new Size(1920, 70);
             lblTitulo.TabIndex = 3;
             lblTitulo.Text = "LOTERÍA MEXICANA";
             lblTitulo.TextAlign = ContentAlignment.MiddleCenter;
@@ -179,7 +179,7 @@ namespace LoteriaMexicana.UI.UserControls
             lblSubtitulo.ForeColor = Color.FromArgb(130, 130, 135);
             lblSubtitulo.Location = new Point(0, 70);
             lblSubtitulo.Name = "lblSubtitulo";
-            lblSubtitulo.Size = new Size(1366, 28);
+            lblSubtitulo.Size = new Size(1920, 28);
             lblSubtitulo.TabIndex = 2;
             lblSubtitulo.Text = "Multijugador Online / LAN";
             lblSubtitulo.TextAlign = ContentAlignment.MiddleCenter;
@@ -189,9 +189,9 @@ namespace LoteriaMexicana.UI.UserControls
             lblVersion.Dock = DockStyle.Bottom;
             lblVersion.Font = new Font("Segoe UI", 8F);
             lblVersion.ForeColor = Color.FromArgb(70, 70, 75);
-            lblVersion.Location = new Point(0, 744);
+            lblVersion.Location = new Point(0, 1056);
             lblVersion.Name = "lblVersion";
-            lblVersion.Size = new Size(1366, 24);
+            lblVersion.Size = new Size(1920, 24);
             lblVersion.TabIndex = 1;
             lblVersion.Text = "S.k.M.k.G";
             lblVersion.TextAlign = ContentAlignment.MiddleCenter;
@@ -205,7 +205,7 @@ namespace LoteriaMexicana.UI.UserControls
             Controls.Add(lblSubtitulo);
             Controls.Add(lblTitulo);
             Name = "UcPantallaInicio";
-            Size = new Size(1366, 768);
+            Size = new Size(1920, 1080);
             panelTarjeta.ResumeLayout(false);
             panelTarjeta.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)nudTablas).EndInit();

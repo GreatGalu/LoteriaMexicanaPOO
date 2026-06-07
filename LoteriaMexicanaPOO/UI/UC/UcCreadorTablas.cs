@@ -16,19 +16,31 @@ namespace LoteriaMexicana.UI.UserControls
         private readonly int[] _ids = new int[Tablero.TOTAL_CASILLAS];
         private int _cursor = 0;
         private readonly PictureBox[,] _celdas = new PictureBox[Tablero.FILAS, Tablero.COLUMNAS];
-
         private readonly int _numeroTabla;
 
         public UcCreadorTablas(int numeroTabla = 1)
         {
             _numeroTabla = numeroTabla;
             InitializeComponent();
-            ActualizarContador();
+
+            lblTituloCreador.Text = $"TABLA {_numeroTabla} — Elige 20 cartas en orden";
+            btnConfirmar.Click += btnConfirmar_Click;
+            btnLimpiar.Click += btnLimpiar_Click;
+            btnAleatorio.Click += btnAleatorio_Click;
+
+            ConstruirGrid();
             CargarCatalogo();
+            ActualizarContador();
         }
+
         private void btnConfirmar_Click(object sender, EventArgs e)
         {
-            if (_cursor < Tablero.TOTAL_CASILLAS) return;
+            if (_cursor < Tablero.TOTAL_CASILLAS)
+            {
+                MessageBox.Show("Debes seleccionar las 20 cartas antes de confirmar.",
+                    "Tabla Incompleta", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             try
             {
                 var tablero = new Tablero();
@@ -42,12 +54,23 @@ namespace LoteriaMexicana.UI.UserControls
             }
         }
 
-        private void btnAleatorio_Click(object sender, EventArgs e) => OnCancelado?.Invoke();
-
         private void btnLimpiar_Click(object sender, EventArgs e)
         {
             Array.Clear(_ids, 0, _ids.Length);
             _cursor = 0;
+            RefrescarGrid();
+            ActualizarContador();
+        }
+
+        private void btnAleatorio_Click(object sender, EventArgs e)
+        {
+            var rand = new Random();
+            int[] todosLosIds = CatalogoCartas.Todas.Select(c => c.Id).ToArray();
+            int[] seleccionados = todosLosIds.OrderBy(x => rand.Next()).Take(Tablero.TOTAL_CASILLAS).ToArray();
+
+            Array.Copy(seleccionados, _ids, Tablero.TOTAL_CASILLAS);
+            _cursor = Tablero.TOTAL_CASILLAS;
+
             RefrescarGrid();
             ActualizarContador();
         }
@@ -76,6 +99,7 @@ namespace LoteriaMexicana.UI.UserControls
 
             for (int i = pos; i < _cursor - 1; i++)
                 _ids[i] = _ids[i + 1];
+
             _ids[--_cursor] = 0;
 
             RefrescarGrid();
@@ -90,7 +114,6 @@ namespace LoteriaMexicana.UI.UserControls
                 {
                     int pos = f * Tablero.COLUMNAS + c;
                     var celda = _celdas[f, c];
-                    celda.Image?.Dispose();
 
                     if (pos < _cursor)
                     {
@@ -118,6 +141,8 @@ namespace LoteriaMexicana.UI.UserControls
         private void CargarCatalogo()
         {
             panelCatalogo.SuspendLayout();
+            panelCatalogo.Controls.Clear();
+
             foreach (var carta in CatalogoCartas.Todas)
             {
                 Image img = GestorArchivos.CargarImagen(carta.Id) ?? GenerarFallback(carta.Id);
@@ -129,9 +154,10 @@ namespace LoteriaMexicana.UI.UserControls
                     BackColor = Color.FromArgb(36, 36, 40),
                     Image = img,
                     Cursor = Cursors.Hand,
-                    Margin = new Padding(3),
+                    Margin = new Padding(4),
                     Tag = carta.Id
                 };
+
                 new ToolTip().SetToolTip(pic, $"[{carta.Id}] {carta.Nombre}");
                 pic.Click += CartaCatalogo_Click;
                 panelCatalogo.Controls.Add(pic);
