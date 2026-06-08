@@ -12,22 +12,18 @@ namespace LoteriaMexicana.UI.UserControls
     {
         public event Action<Tablero> OnTablaConfirmada;
         public event Action OnCancelado;
-
         private readonly int[] _ids = new int[Tablero.TOTAL_CASILLAS];
         private int _cursor = 0;
         private readonly PictureBox[,] _celdas = new PictureBox[Tablero.FILAS, Tablero.COLUMNAS];
         private readonly int _numeroTabla;
-
         public UcCreadorTablas(int numeroTabla = 1)
         {
             _numeroTabla = numeroTabla;
             InitializeComponent();
-
             lblTituloCreador.Text = $"TABLA {_numeroTabla} — Elige 20 cartas en orden";
             btnConfirmar.Click += btnConfirmar_Click;
             btnLimpiar.Click += btnLimpiar_Click;
             btnAleatorio.Click += btnAleatorio_Click;
-
             ConstruirGrid();
             CargarCatalogo();
             ActualizarContador();

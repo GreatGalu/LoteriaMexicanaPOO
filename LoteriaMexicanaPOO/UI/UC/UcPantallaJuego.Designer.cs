@@ -11,12 +11,10 @@ namespace LoteriaMexicana.UI.UserControls
             if (disposing && components != null) components.Dispose();
             base.Dispose(disposing);
         }
-
         internal Panel panelIzquierdo;
         internal Label lblEstado;
         internal TextBox txtSala;
         internal Button btnAccionRed;
-        internal Button btnUnirse;
         internal Button btnSalir;
         internal PictureBox picCartaActual;
         internal Button btnGritarLoteria;
@@ -26,6 +24,7 @@ namespace LoteriaMexicana.UI.UserControls
         internal FlowLayoutPanel panelTablas;
         internal FlowLayoutPanel panelHistorialCartas;
         internal Label lblHistorialTitulo;
+        internal CheckBox chkAutoCantar;
         private Panel panelConexion;
         private Panel panelChat;
 
@@ -36,12 +35,12 @@ namespace LoteriaMexicana.UI.UserControls
             panelChat = new Panel();
             txtChatInput = new TextBox();
             btnEnviar = new Button();
+            chkAutoCantar = new CheckBox();
             btnGritarLoteria = new Button();
             picCartaActual = new PictureBox();
             panelConexion = new Panel();
             txtSala = new TextBox();
             btnAccionRed = new Button();
-            btnUnirse = new Button();
             btnSalir = new Button();
             lblEstado = new Label();
             panelTablas = new FlowLayoutPanel();
@@ -59,6 +58,7 @@ namespace LoteriaMexicana.UI.UserControls
             panelIzquierdo.BackColor = Color.FromArgb(32, 32, 36);
             panelIzquierdo.Controls.Add(txtHistorialChat);
             panelIzquierdo.Controls.Add(panelChat);
+            panelIzquierdo.Controls.Add(chkAutoCantar);
             panelIzquierdo.Controls.Add(btnGritarLoteria);
             panelIzquierdo.Controls.Add(picCartaActual);
             panelIzquierdo.Controls.Add(panelConexion);
@@ -77,12 +77,12 @@ namespace LoteriaMexicana.UI.UserControls
             txtHistorialChat.Dock = DockStyle.Fill;
             txtHistorialChat.Font = new Font("Consolas", 9F);
             txtHistorialChat.ForeColor = Color.FromArgb(190, 190, 195);
-            txtHistorialChat.Location = new Point(10, 340);
+            txtHistorialChat.Location = new Point(10, 363);
             txtHistorialChat.Multiline = true;
             txtHistorialChat.Name = "txtHistorialChat";
             txtHistorialChat.ReadOnly = true;
             txtHistorialChat.ScrollBars = ScrollBars.Vertical;
-            txtHistorialChat.Size = new Size(275, 698);
+            txtHistorialChat.Size = new Size(275, 675);
             txtHistorialChat.TabIndex = 0;
             // 
             // panelChat
@@ -115,13 +115,29 @@ namespace LoteriaMexicana.UI.UserControls
             btnEnviar.FlatStyle = FlatStyle.Flat;
             btnEnviar.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnEnviar.ForeColor = Color.White;
-            btnEnviar.Location = new Point(200, 7);
+            btnEnviar.Location = new Point(200, 4);
             btnEnviar.Name = "btnEnviar";
             btnEnviar.Size = new Size(55, 26);
             btnEnviar.TabIndex = 1;
             btnEnviar.Text = "Enviar";
             btnEnviar.UseVisualStyleBackColor = false;
             btnEnviar.Click += btnEnviar_Click;
+            // 
+            // chkAutoCantar
+            // 
+            chkAutoCantar.AutoSize = true;
+            chkAutoCantar.BackColor = Color.Transparent;
+            chkAutoCantar.Cursor = Cursors.Hand;
+            chkAutoCantar.Dock = DockStyle.Top;
+            chkAutoCantar.Font = new Font("Segoe UI", 8F);
+            chkAutoCantar.ForeColor = Color.FromArgb(160, 160, 165);
+            chkAutoCantar.Location = new Point(10, 340);
+            chkAutoCantar.Name = "chkAutoCantar";
+            chkAutoCantar.Size = new Size(275, 23);
+            chkAutoCantar.TabIndex = 2;
+            chkAutoCantar.Text = "Auto (carta cada 8s)";
+            chkAutoCantar.UseVisualStyleBackColor = false;
+            chkAutoCantar.Visible = false;
             // 
             // btnGritarLoteria
             // 
@@ -135,7 +151,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnGritarLoteria.Location = new Point(10, 288);
             btnGritarLoteria.Name = "btnGritarLoteria";
             btnGritarLoteria.Size = new Size(275, 52);
-            btnGritarLoteria.TabIndex = 2;
+            btnGritarLoteria.TabIndex = 3;
             btnGritarLoteria.Text = "¡ L O T E R Í A !";
             btnGritarLoteria.UseVisualStyleBackColor = false;
             btnGritarLoteria.Click += btnGritarLoteria_Click;
@@ -148,7 +164,7 @@ namespace LoteriaMexicana.UI.UserControls
             picCartaActual.Name = "picCartaActual";
             picCartaActual.Size = new Size(275, 226);
             picCartaActual.SizeMode = PictureBoxSizeMode.Zoom;
-            picCartaActual.TabIndex = 3;
+            picCartaActual.TabIndex = 4;
             picCartaActual.TabStop = false;
             // 
             // panelConexion
@@ -156,13 +172,12 @@ namespace LoteriaMexicana.UI.UserControls
             panelConexion.BackColor = Color.Transparent;
             panelConexion.Controls.Add(txtSala);
             panelConexion.Controls.Add(btnAccionRed);
-            panelConexion.Controls.Add(btnUnirse);
             panelConexion.Controls.Add(btnSalir);
             panelConexion.Dock = DockStyle.Top;
             panelConexion.Location = new Point(10, 28);
             panelConexion.Name = "panelConexion";
             panelConexion.Size = new Size(275, 34);
-            panelConexion.TabIndex = 4;
+            panelConexion.TabIndex = 5;
             // 
             // txtSala
             // 
@@ -191,21 +206,6 @@ namespace LoteriaMexicana.UI.UserControls
             btnAccionRed.UseVisualStyleBackColor = false;
             btnAccionRed.Click += btnAccionRed_ClickCrear;
             // 
-            // btnUnirse
-            // 
-            btnUnirse.BackColor = Color.FromArgb(45, 80, 130);
-            btnUnirse.Cursor = Cursors.Hand;
-            btnUnirse.FlatAppearance.BorderSize = 0;
-            btnUnirse.FlatStyle = FlatStyle.Flat;
-            btnUnirse.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
-            btnUnirse.ForeColor = Color.White;
-            btnUnirse.Location = new Point(140, 4);
-            btnUnirse.Name = "btnUnirse";
-            btnUnirse.Size = new Size(56, 24);
-            btnUnirse.TabIndex = 2;
-            btnUnirse.Text = "Unirse";
-            btnUnirse.UseVisualStyleBackColor = false;
-            // 
             // btnSalir
             // 
             btnSalir.BackColor = Color.FromArgb(100, 40, 40);
@@ -231,7 +231,7 @@ namespace LoteriaMexicana.UI.UserControls
             lblEstado.Location = new Point(10, 6);
             lblEstado.Name = "lblEstado";
             lblEstado.Size = new Size(275, 22);
-            lblEstado.TabIndex = 5;
+            lblEstado.TabIndex = 6;
             lblEstado.Text = "Sin conexion";
             lblEstado.TextAlign = ContentAlignment.MiddleLeft;
             // 
@@ -292,9 +292,6 @@ namespace LoteriaMexicana.UI.UserControls
             panelHistorialCartas.PerformLayout();
             ResumeLayout(false);
         }
-
-        // Handlers del hover del historial — aqui en el Designer.cs
-        // (son simples, sin lambdas, el disenador los tolera bien)
         private void PanelHistorial_MouseEnter(object sender, System.EventArgs e)
         {
             panelHistorialCartas.Height = 106;

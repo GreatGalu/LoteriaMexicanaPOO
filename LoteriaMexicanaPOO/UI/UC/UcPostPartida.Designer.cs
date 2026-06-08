@@ -11,11 +11,6 @@ namespace LoteriaMexicana.UI.UserControls
             if (disposing && components != null) components.Dispose();
             base.Dispose(disposing);
         }
-
-        // ── Controles ────────────────────────────────────────────────────
-        // REGLA: solo controles estandar WinForms con propiedades de valor literal.
-        // Sin lambdas, sin bucles, sin logica — todo eso va en el .cs
-
         internal Panel panelTarjeta;
         internal Label lblTitulo;
         internal Label lblGanador;

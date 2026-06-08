@@ -13,6 +13,7 @@ namespace LoteriaMexicana.UI.UserControls
     {
         public event Action OnSolicitarSalida;
         public event Action<string, string> OnPartidaTerminada;
+        public event Action OnNuevaPartidaRecibida;
         private ClienteLoteria _cliente;
         private ServidorLoteria _servidor;
         private Mazo _mazo;
@@ -50,12 +51,20 @@ namespace LoteriaMexicana.UI.UserControls
             _servidor = servidor;
             _mazo = mazo;
             _esAnfitrion = true;
-            IniciarTimerCantor();
-
-            btnAccionRed.Text = "Siguiente ▶";
+            btnAccionRed.Text = "Iniciar ";
+            btnAccionRed.Enabled = true;
             btnAccionRed.Click -= btnAccionRed_ClickCrear;
-            btnAccionRed.Click += (s, e) => CantarSiguienteCarta();
-            btnUnirse.Enabled = false;
+            btnAccionRed.Click += BtnIniciar_Click;
+
+            chkAutoCantar.Visible = true;
+        }
+        private void BtnIniciar_Click(object sender, EventArgs e)
+        {
+            btnAccionRed.Text = "Siguiente ▶";
+            btnAccionRed.Click -= BtnIniciar_Click;
+            btnAccionRed.Click += (s, ev) => CantarSiguienteCarta();
+            MostrarEnHistorial("=== Partida iniciada ===");
+            CantarSiguienteCarta();
         }
 
         public void MostrarCodigoSala(string codigo)
@@ -69,13 +78,11 @@ namespace LoteriaMexicana.UI.UserControls
         {
             lblEstado.Text = $"Conectado a la sala: {sala}";
             btnAccionRed.Enabled = false;
-            btnUnirse.Enabled = false;
         }
         public void ReiniciarPartida(Mazo mazoNuevo)
         {
             _mazo = mazoNuevo;
             _partidaTerminada = false;
-
             btnGritarLoteria.Enabled = true;
             btnEnviar.Enabled = true;
             txtChatInput.Enabled = true;
@@ -86,12 +93,11 @@ namespace LoteriaMexicana.UI.UserControls
             foreach (var pb in miniaturas)
             {
                 var img = pb.Image;
-                pb.Image = null;                           
-                panelHistorialCartas.Controls.Remove(pb); 
-                img?.Dispose();                           
+                pb.Image = null;                          
+                panelHistorialCartas.Controls.Remove(pb);
+                img?.Dispose();                        
                 pb.Dispose();
             }
-
             var imgGrande = picCartaActual.Image;
             picCartaActual.Image = null;
             imgGrande?.Dispose();
@@ -99,10 +105,20 @@ namespace LoteriaMexicana.UI.UserControls
             ConstruirTablas();
 
             if (_esAnfitrion)
-                IniciarTimerCantor();
+            {
+                btnAccionRed.Text = "Iniciar";
+                btnAccionRed.Enabled = true;
+                btnAccionRed.Click -= BtnIniciar_Click;
+                btnAccionRed.Click -= btnAccionRed_ClickCrear;
+                btnAccionRed.Click += BtnIniciar_Click;
+
+                chkAutoCantar.Checked = false;
+                _timerCantor?.Stop();
+            }
 
             MostrarEnHistorial("=== Nueva partida iniciada ===");
         }
+
         public void SolicitarSalida() => btnSalir_Click(null, null);
         private void btnAccionRed_ClickCrear(object sender, EventArgs e) { }
 
@@ -179,6 +195,7 @@ namespace LoteriaMexicana.UI.UserControls
                 case "CARTA": ProcesarCarta(p); break;
                 case "CHAT": ProcesarChat(p); break;
                 case "GANADOR": ProcesarGanador(p); break;
+                case "NUEVA_PARTIDA": ProcesarNuevaPartida(); break;
             }
         }
 
@@ -224,7 +241,7 @@ namespace LoteriaMexicana.UI.UserControls
 
             _partidaTerminada = true;
             CongelarJuego();
-            MostrarEnHistorial($"🏆 {ganador} ganó con {figura}.");
+            MostrarEnHistorial($" {ganador} ganó con {figura}.");
             _voz.AnunciarCarta($"¡Lotería! {ganador} ganó");
             var timer = new System.Windows.Forms.Timer { Interval = 1000 };
             timer.Tick += (s, e) =>
@@ -236,13 +253,26 @@ namespace LoteriaMexicana.UI.UserControls
             };
             timer.Start();
         }
+
+        private void ProcesarNuevaPartida()
+        {
+            MostrarEnHistorial("=== El anfitrion inicio una nueva partida ===");
+            _partidaTerminada = false;
+            btnGritarLoteria.Enabled = true;
+            btnEnviar.Enabled = true;
+            txtChatInput.Enabled = true;
+            foreach (var tablero in _tableros)
+                tablero.GenerarAleatorio();
+            ConstruirTablas();
+            OnNuevaPartidaRecibida?.Invoke();
+        }
         private void IniciarTimerCantor()
         {
             _timerCantor?.Stop();
             _timerCantor?.Dispose();
-            _timerCantor = new System.Windows.Forms.Timer { Interval = 10_000 };
+            int intervalo = chkAutoCantar.Checked ? 8_000 : System.Threading.Timeout.Infinite;
+            _timerCantor = new System.Windows.Forms.Timer { Interval = Math.Max(intervalo, 1_000) };
             _timerCantor.Tick += (s, e) => CantarSiguienteCarta();
-            _timerCantor.Start();
         }
 
         private void CantarSiguienteCarta()
@@ -251,12 +281,16 @@ namespace LoteriaMexicana.UI.UserControls
             if (_partidaTerminada || _mazo == null || _mazo.EstaAgotado)
             {
                 _timerCantor?.Stop();
-                MostrarEnHistorial("El mazo se agotó.");
+                MostrarEnHistorial("El mazo se agotó. Fin de la partida.");
                 return;
             }
-            _timerCantor?.Stop();
-            _timerCantor?.Start();
+
             _servidor.Transmitir($"CARTA|{_mazo.SacarCarta().Id}");
+            if (chkAutoCantar.Checked)
+            {
+                IniciarTimerCantor();
+                _timerCantor.Start();
+            }
         }
         private void ConstruirTablas()
         {

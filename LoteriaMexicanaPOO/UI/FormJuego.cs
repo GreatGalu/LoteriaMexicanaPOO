@@ -18,7 +18,7 @@ namespace LoteriaMexicana.UI
         private bool _cerrandoIntencional = false;
         private UcPantallaJuego _ucJuego;
         private List<Tablero> _tablerosActivos;
-        private UcPostPartida _overlayPostPartida; 
+        private UcPostPartida _overlayPostPartida;
 
         public FormJuego()
         {
@@ -94,6 +94,12 @@ namespace LoteriaMexicana.UI
             uc.Configurar(nombre, tableros);
             uc.OnSolicitarSalida += CerrarLimpio;
             uc.OnPartidaTerminada += MostrarOverlayPostPartida;
+            uc.OnNuevaPartidaRecibida += () =>
+            {
+                if (InvokeRequired) { BeginInvoke(new Action(() => QuitarOverlayPostPartida())); return; }
+                QuitarOverlayPostPartida();
+            };
+
             return uc;
         }
         private void MostrarOverlayPostPartida(string ganador, string figura)
@@ -114,6 +120,7 @@ namespace LoteriaMexicana.UI
                 if (_mazo != null) { _mazo.Reiniciar(); _mazo.Barajar(); }
                 foreach (var t in _tablerosActivos) t.GenerarAleatorio();
                 _ucJuego?.ReiniciarPartida(_mazo);
+                _servidor?.Transmitir("NUEVA_PARTIDA");
             };
 
             _overlayPostPartida.OnSalirAlMenu += () =>

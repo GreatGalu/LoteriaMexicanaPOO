@@ -27,22 +27,14 @@ namespace LoteriaMexicana.UI.UserControls
             btnNuevaPartida.Click += (s, e) => OnNuevaPartida?.Invoke();
             btnSalirAlMenu.Click += (s, e) => OnSalirAlMenu?.Invoke();
 
-            // Centrar al cambiar tamanio
             this.Resize += (s, e) => CentrarTarjetaPublico();
         }
-
-        /// <summary>
-        /// Centra el recuadro (panelTarjeta) en el control.
-        /// El FormJuego lo llama despues de montar el overlay y al redimensionar.
-        /// </summary>
         public void CentrarTarjetaPublico()
         {
             if (panelTarjeta == null || panelTarjeta.IsDisposed) return;
             panelTarjeta.Left = (Width - panelTarjeta.Width) / 2;
             panelTarjeta.Top = (Height - panelTarjeta.Height) / 2;
         }
-
-        // Fondo semitransparente oscuro sobre la pantalla de juego
         protected override void OnPaintBackground(PaintEventArgs e)
         {
             using var brush = new SolidBrush(Color.FromArgb(180, 10, 10, 12));
