@@ -7,9 +7,9 @@ namespace LoteriaMexicana.Logic
 {
     public class Tablero
     {
-        public const int FILAS          = 4;
+        public const int FILAS          = 5;
         public const int COLUMNAS       = 5;
-        public const int TOTAL_CASILLAS = FILAS * COLUMNAS;
+        public const int TOTAL_CASILLAS = FILAS * COLUMNAS;   // 25
         private const int ID_MIN = 1;
         private const int ID_MAX = 54;
 
@@ -22,6 +22,7 @@ namespace LoteriaMexicana.Logic
             Casillas = new int[FILAS, COLUMNAS];
             Tapas    = new bool[FILAS, COLUMNAS];
         }
+
         public void GenerarAleatorio()
         {
             var pool = Enumerable.Range(ID_MIN, ID_MAX).ToList();
@@ -34,6 +35,7 @@ namespace LoteriaMexicana.Logic
             LlenarMatriz(pool.Take(TOTAL_CASILLAS).ToArray());
             ReiniciarTapas();
         }
+
         public void CargarDesdeIds(int[] ids)
         {
             if (ids == null || ids.Length != TOTAL_CASILLAS)
@@ -62,10 +64,14 @@ namespace LoteriaMexicana.Logic
             ReiniciarTapas();
             return true;
         }
+
+        /// <summary>
+        /// Marcado libre: cualquier casilla puede tapase/destapase en cualquier momento,
+        /// sin importar si la carta fue cantada o no.
+        /// </summary>
         public bool AlternarTapa(int fila, int col)
         {
-            int idCarta = Casillas[fila, col];
-            if (!CartasCantadas.Contains(idCarta)) return false;
+            if (fila < 0 || fila >= FILAS || col < 0 || col >= COLUMNAS) return false;
             Tapas[fila, col] = !Tapas[fila, col];
             return true;
         }
@@ -84,6 +90,29 @@ namespace LoteriaMexicana.Logic
                     if (Casillas[f, c] == id) return (f, c);
             return (-1, -1);
         }
+
+        /// <summary>
+        /// Devuelve los IDs de las casillas en orden de lectura (fila por fila).
+        /// </summary>
+        public int[] ObtenerIdsEnOrden()
+        {
+            var ids = new int[TOTAL_CASILLAS];
+            int idx = 0;
+            for (int f = 0; f < FILAS; f++)
+                for (int c = 0; c < COLUMNAS; c++)
+                    ids[idx++] = Casillas[f, c];
+            return ids;
+        }
+
+        /// <summary>
+        /// Compara si este tablero tiene exactamente las mismas cartas en el mismo orden que otro.
+        /// </summary>
+        public bool EsIdenticoA(Tablero otro)
+        {
+            if (otro == null) return false;
+            return ObtenerIdsEnOrden().SequenceEqual(otro.ObtenerIdsEnOrden());
+        }
+
         private void LlenarMatriz(int[] ids)
         {
             int idx = 0;
@@ -92,7 +121,7 @@ namespace LoteriaMexicana.Logic
                     Casillas[f, c] = ids[idx++];
         }
 
-        private void ReiniciarTapas()
+        public void ReiniciarTapas()
         {
             CartasCantadas.Clear();
             for (int f = 0; f < FILAS; f++)

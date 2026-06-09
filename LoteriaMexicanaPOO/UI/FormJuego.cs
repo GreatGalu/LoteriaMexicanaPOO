@@ -55,7 +55,7 @@ namespace LoteriaMexicana.UI
                 _mazo.Barajar();
                 _cliente = new ClienteLoteria();
                 _ucJuego.AsignarCliente(_cliente);
-                _cliente.Conectar("127.0.0.1");
+                _cliente.Conectar("127.0.0.1", nombre);
                 _ucJuego.AsignarServidor(_servidor, _mazo);
                 _ucJuego.MostrarCodigoSala(IpACodigo(ObtenerIpLocal()));
             }
@@ -78,7 +78,7 @@ namespace LoteriaMexicana.UI
             {
                 _cliente = new ClienteLoteria();
                 _ucJuego.AsignarCliente(_cliente);
-                _cliente.Conectar(ip);
+                _cliente.Conectar(ip, nombre);
                 _ucJuego.MostrarConectado(entradaSala.ToUpper());
             }
             catch (Exception ex)
