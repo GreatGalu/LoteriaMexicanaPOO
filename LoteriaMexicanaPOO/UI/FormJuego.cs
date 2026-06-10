@@ -188,8 +188,6 @@ namespace LoteriaMexicana.UI
                     {
                         nuevaTabla = CrearTableroAleatorio();
                     }
-
-                    // Verificar duplicados
                     bool esDuplicada = false;
                     foreach (var t in lista)
                     {
@@ -207,7 +205,6 @@ namespace LoteriaMexicana.UI
                             MessageBox.Show("Esta tabla es idéntica a una que ya agregaste. Por favor crea/carga una diferente.", 
                                             "Tabla Duplicada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
-                        // Si es aleatoria, el ciclo while lo volverá a intentar automáticamente sin avisar
                     }
                     else
                     {

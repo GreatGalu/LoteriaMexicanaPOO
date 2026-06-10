@@ -15,14 +15,7 @@ namespace LoteriaMexicana.Network
         public event Action<string> OnMensajeRecibido;
         public event Action         OnDesconectado;
         public event Action<string> OnError;
-        /// <summary>
-        /// Se dispara cuando el servidor rechaza el nombre elegido.
-        /// El argumento es el motivo del rechazo.
-        /// </summary>
         public event Action<string> OnConectadoRechazado;
-        /// <summary>
-        /// Se dispara cuando el servidor acepta la conexión.
-        /// </summary>
         public event Action OnConectadoOk;
 
         public void Conectar(string ip, string nombre)
@@ -33,8 +26,6 @@ namespace LoteriaMexicana.Network
             _cliente.Connect(ip, PUERTO);
             _writer    = new StreamWriter(_cliente.GetStream()) { AutoFlush = true };
             _conectado = true;
-
-            // Presentarse con el nombre al servidor
             _writer.WriteLine($"CONNECT|{nombre}");
 
             Task.Run(() => BucleEscucha());

@@ -28,7 +28,7 @@ namespace LoteriaMexicana.Logic
             var pool = Enumerable.Range(ID_MIN, ID_MAX).ToList();
             if (idCartaDoble.HasValue)
             {
-                pool.Remove(idCartaDoble.Value); // Evitamos seleccionarla otra vez
+                pool.Remove(idCartaDoble.Value);
             }
 
             var rng  = new Random();
@@ -45,8 +45,6 @@ namespace LoteriaMexicana.Logic
             {
                 seleccionadas.Add(idCartaDoble.Value);
                 seleccionadas.Add(idCartaDoble.Value);
-
-                // Volvemos a mezclar para distribuir la carta doble
                 for (int i = seleccionadas.Count - 1; i > 0; i--)
                 {
                     int j = rng.Next(i + 1);
@@ -86,11 +84,6 @@ namespace LoteriaMexicana.Logic
             ReiniciarTapas();
             return true;
         }
-
-        /// <summary>
-        /// Marcado libre: cualquier casilla puede tapase/destapase en cualquier momento,
-        /// sin importar si la carta fue cantada o no.
-        /// </summary>
         public bool AlternarTapa(int fila, int col)
         {
             if (fila < 0 || fila >= FILAS || col < 0 || col >= COLUMNAS) return false;
@@ -112,10 +105,6 @@ namespace LoteriaMexicana.Logic
                     if (Casillas[f, c] == id) return (f, c);
             return (-1, -1);
         }
-
-        /// <summary>
-        /// Devuelve los IDs de las casillas en orden de lectura (fila por fila).
-        /// </summary>
         public int[] ObtenerIdsEnOrden()
         {
             var ids = new int[TOTAL_CASILLAS];
@@ -125,10 +114,6 @@ namespace LoteriaMexicana.Logic
                     ids[idx++] = Casillas[f, c];
             return ids;
         }
-
-        /// <summary>
-        /// Compara si este tablero tiene exactamente las mismas cartas en el mismo orden que otro.
-        /// </summary>
         public bool EsIdenticoA(Tablero otro)
         {
             if (otro == null) return false;

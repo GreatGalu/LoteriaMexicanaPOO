@@ -11,25 +11,17 @@ namespace LoteriaMexicana.Controllers
         private const int ESPACIO           = 4;
         private const int PADDING_IZQUIERDO = 14;
         private const int PADDING_SUPERIOR  = 26;
-
-        // ── Dimensiones adaptadas al número de tablas activas ───────────────
         private readonly int _anchoCelda;
         private readonly int _altoCelda;
-
         private readonly Tablero       _tablero;
         private readonly PictureBox[,] _celdas;
         private readonly int           _indice;
-
         public event Action<int, int, int> OnTapaAlternada;
-
-        /// <param name="totalTablas">Número total de tablas para escalar visualmente.</param>
         public ControladorTablero(Tablero tablero, int indice, int totalTablas = 1)
         {
             _tablero = tablero;
             _indice  = indice;
             _celdas  = new PictureBox[Tablero.FILAS, Tablero.COLUMNAS];
-
-            // Tamaño dinámico de celda según cuántas tablas coexisten
             if (totalTablas <= 2)      { _anchoCelda = 88; _altoCelda = 118; }
             else if (totalTablas <= 4) { _anchoCelda = 74; _altoCelda = 98;  }
             else                       { _anchoCelda = 60; _altoCelda = 80;  }
@@ -69,15 +61,8 @@ namespace LoteriaMexicana.Controllers
 
             return grupo;
         }
-
-        /// <summary>
-        /// Se llama cuando el gritón anuncia una carta; ya no cambia el estilo visual.
-        /// Solo registra internamente (el estado ya está en CartasCantadas del Tablero).
-        /// </summary>
         public void MarcarCartaCantada(int fila, int col)
         {
-            // Comportamiento visual suprimido según "Ocultar Carta Cantada".
-            // No se aplica ningún resalte especial para cartas anunciadas.
         }
 
         public void RefrescarVisual()
@@ -129,7 +114,6 @@ namespace LoteriaMexicana.Controllers
 
         private void AlternarTapa(int fila, int col)
         {
-            // Marcado libre: siempre permitido
             _tablero.AlternarTapa(fila, col);
             AplicarEstiloEstado(_celdas[fila, col], tapada: _tablero.Tapas[fila, col]);
             OnTapaAlternada?.Invoke(_indice, fila, col);
@@ -144,7 +128,6 @@ namespace LoteriaMexicana.Controllers
             }
             else
             {
-                // Sin resalte especial para cartas cantadas: aspecto neutro
                 pic.BackColor   = Color.FromArgb(50, 50, 52);
                 pic.BorderStyle = BorderStyle.FixedSingle;
             }

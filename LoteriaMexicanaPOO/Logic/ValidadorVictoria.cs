@@ -6,17 +6,13 @@ namespace LoteriaMexicana.Logic
 {
     public static class ValidadorVictoria
     {
-        private const int FILAS    = Tablero.FILAS;    // 5
-        private const int COLUMNAS = Tablero.COLUMNAS; // 4
-
-        // ── Reglas activas (configuradas por el anfitrión) ──────────────────
+        private const int FILAS    = Tablero.FILAS;   
+        private const int COLUMNAS = Tablero.COLUMNAS;
         public static bool ReglaHorizontal { get; set; } = true;
         public static bool ReglaVertical   { get; set; } = true;
         public static bool ReglaDiagonal   { get; set; } = true;
         public static bool ReglaEsquinas   { get; set; } = true;
         public static bool ReglaPoyaCruz   { get; set; } = true;
-
-        // ── Resultados ──────────────────────────────────────────────────────
         public enum ResultadoValidacion
         {
             SinFigura,
@@ -30,8 +26,6 @@ namespace LoteriaMexicana.Logic
             public string              Figura      { get; init; }
             public List<int>           CartasTrampa { get; init; } = new();
         }
-
-        // ── Evaluación con detección de trampa ──────────────────────────────
         public static DetalleValidacion EvaluarConValidacion(
             bool[,] tapas,
             int[,]  casillas,
@@ -84,8 +78,6 @@ namespace LoteriaMexicana.Logic
                 Figura    = figura
             };
         }
-
-        // ── Evalúa solo las figuras habilitadas ─────────────────────────────
         public static string EvaluarTodo(bool[,] tapas)
         {
             var figuras = new List<string>();
@@ -96,8 +88,6 @@ namespace LoteriaMexicana.Logic
             if (ReglaPoyaCruz   && ValidarPoyaOCruz(tapas))       figuras.Add("Poya / Cruz");
             return figuras.Count > 0 ? string.Join(" + ", figuras) : null;
         }
-
-        // ── Figuras individuales ─────────────────────────────────────────────
         public static bool ValidarLineaHorizontal(bool[,] tapas)
         {
             ValidarDimension(tapas);
@@ -127,7 +117,6 @@ namespace LoteriaMexicana.Logic
         public static bool ValidarDiagonal(bool[,] tapas)
         {
             ValidarDimension(tapas);
-            // En una matriz 5x4 la diagonal tiene min(5,4)=4 celdas
             int largo = Math.Min(FILAS, COLUMNAS);
 
             bool principal = true;
@@ -149,16 +138,12 @@ namespace LoteriaMexicana.Logic
                 && tapas[FILAS - 1, 0]
                 && tapas[FILAS - 1, COLUMNAS - 1];
         }
-
         public static bool ValidarPoyaOCruz(bool[,] tapas)
         {
             ValidarDimension(tapas);
-            // Centro exacto en 5x5 es fila 2, col 2
             if (FilaCompleta(tapas, 2) && ColumnaCompleta(tapas, 2)) return true;
             return false;
         }
-
-        // ── Helpers ──────────────────────────────────────────────────────────
         private static bool FilaCompleta(bool[,] tapas, int fila)
         {
             for (int c = 0; c < COLUMNAS; c++)

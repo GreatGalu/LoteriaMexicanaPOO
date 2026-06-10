@@ -12,13 +12,10 @@ namespace LoteriaMexicana.UI.UserControls
 {
     public partial class UcPantallaJuego : UserControl
     {
-        // ── Eventos hacia FormJuego ──────────────────────────────────────────
         public event Action OnSolicitarSalida;
         public event Action<string, string> OnPartidaTerminada;
         public event Action<string, string, List<int>, List<int>> OnEmpateDetectado;
         public event Action OnNuevaPartidaRecibida;
-
-        // ── Estado interno ───────────────────────────────────────────────────
         private ClienteLoteria   _cliente;
         private ServidorLoteria  _servidor;
         private Mazo             _mazo;
@@ -38,14 +35,10 @@ namespace LoteriaMexicana.UI.UserControls
         private bool   _timerPausado = false;
         private int?   _cartaDobleActual = null;
         private readonly Dictionary<int, string> _nombresCartas = new Dictionary<int, string>();
-
-        // ── Constructor ──────────────────────────────────────────────────────
         public UcPantallaJuego()
         {
             InitializeComponent();
             PrecargarNombresCartas();
-
-            // Conectar eventos de controles nuevos (no wired en Designer)
             btnPausarTimer.Click       += btnPausarTimer_Click;
             btnAumentarVelocidad.Click += btnAumentarVelocidad_Click;
             chkHorizontal.CheckedChanged += (s, e) => EnviarReglas();
@@ -67,8 +60,6 @@ namespace LoteriaMexicana.UI.UserControls
                 }
             };
         }
-
-        // ── Configuración inicial ─────────────────────────────────────────────
         public void Configurar(string nombre, List<Tablero> tableros)
         {
             _nombre = nombre;
@@ -112,12 +103,8 @@ namespace LoteriaMexicana.UI.UserControls
 
             chkAutoCantar.Visible       = true;
             panelAdminControles.Visible = true;
-
-            // El anfitrión puede modificar las reglas
             HabilitarControlesReglas(true);
         }
-
-        // ── Inicio de partida ─────────────────────────────────────────────────
         public int? ObtenerCartaDobleSiAplica()
         {
             if (chkCartasDobles.Checked) return new Random().Next(1, 55);
@@ -163,11 +150,8 @@ namespace LoteriaMexicana.UI.UserControls
         {
             lblEstado.Text      = $"Conectado a la sala: {sala}";
             btnAccionRed.Enabled = false;
-            // Clientes no pueden editar las reglas, solo verlas
             HabilitarControlesReglas(false);
         }
-
-        // ── Reinicio de partida ───────────────────────────────────────────────
         public void ReiniciarPartida(Mazo mazoNuevo)
         {
             _mazo            = mazoNuevo;
@@ -180,8 +164,6 @@ namespace LoteriaMexicana.UI.UserControls
             btnEnviar.Enabled        = true;
             txtChatInput.Enabled     = true;
             _jugadoresEnDesempate = null;
-
-            // Limpiar historial de cartas
             var miniaturas = new List<PictureBox>();
             foreach (Control c in panelHistorialCartas.Controls)
                 if (c is PictureBox pb) miniaturas.Add(pb);
@@ -216,11 +198,8 @@ namespace LoteriaMexicana.UI.UserControls
 
         public void SolicitarSalida() => btnSalir_Click(null, null);
         private void btnAccionRed_ClickCrear(object sender, EventArgs e) { }
-
-        // ── ¡Lotería! ─────────────────────────────────────────────────────────
         private void btnGritarLoteria_Click(object sender, EventArgs e)
         {
-            // Si hay ronda de desempate activa y este jugador no está en ella, no puede ganar
             if (_jugadoresEnDesempate != null && !_jugadoresEnDesempate.Contains(_nombre))
             {
                 MessageBox.Show("Estás fuera de la ronda de desempate. Solo pueden ganar los jugadores empatados.",
@@ -228,7 +207,7 @@ namespace LoteriaMexicana.UI.UserControls
                 return;
             }
             if (_partidaTerminada || _descalificado || _cliente == null) return;
-            btnGritarLoteria.Enabled = false;  // anti-doble-click
+            btnGritarLoteria.Enabled = false;
 
             for (int i = 0; i < _tableros.Count; i++)
             {
@@ -244,7 +223,7 @@ namespace LoteriaMexicana.UI.UserControls
                         var todosIds = string.Join(",", _tableros[i].ObtenerIdsEnOrden());
                         var idsGanStr = string.Join(",", idsGanadores);
                         _cliente.Enviar($"RECLAMO_LOTERIA|{_nombre}|{detalle.Figura} (Tabla {i + 1})|{i}|{idsGanStr}|{todosIds}");
-                        return;  // botón permanece deshabilitado hasta respuesta del servidor
+                        return;
 
                     case ValidadorVictoria.ResultadoValidacion.Trampa:
                         string ids = string.Join(", #", detalle.CartasTrampa);
@@ -253,23 +232,21 @@ namespace LoteriaMexicana.UI.UserControls
 
                         if (_advertenciasLoteria >= MAX_ADVERTENCIAS)
                         {
-                            MostrarEnHistorial($"⚠ Trampa detectada (#{ids}) — DESCALIFICADO.");
+                            MostrarEnHistorial($"Trampa detectada (#{ids}) — DESCALIFICADO.");
                             _cliente.Enviar($"PERDEDOR|{_nombre}|Marcó cartas no cantadas: #{ids}");
                             Descalificar("Marcaste casillas cuyas cartas aún no han salido tres veces.");
                         }
                         else
                         {
-                            MostrarEnHistorial($"⚠ Advertencia {_advertenciasLoteria}/{MAX_ADVERTENCIAS}: casillas no cantadas tapadas #{ids}");
+                            MostrarEnHistorial($"Advertencia {_advertenciasLoteria}/{MAX_ADVERTENCIAS}: casillas no cantadas tapadas #{ids}");
                             MessageBox.Show(
-                                $"⚠ Advertencia {_advertenciasLoteria} de {MAX_ADVERTENCIAS}\n\nTienes casillas marcadas cuyas cartas aún no han salido.\nSi llegas a {MAX_ADVERTENCIAS} advertencias serás descalificado.",
+                                $" Advertencia {_advertenciasLoteria} de {MAX_ADVERTENCIAS}\n\nTienes casillas marcadas cuyas cartas aún no han salido.\nSi llegas a {MAX_ADVERTENCIAS} advertencias serás descalificado.",
                                 "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            btnGritarLoteria.Enabled = true;  // puede seguir jugando
+                            btnGritarLoteria.Enabled = true;
                         }
                         return;
                 }
             }
-
-            // Sin figura válida
             _advertenciasLoteria++;
             int advsRestantes = MAX_ADVERTENCIAS - _advertenciasLoteria;
 
@@ -305,8 +282,6 @@ namespace LoteriaMexicana.UI.UserControls
                     if (t.Tapas[f, c]) ids.Add(t.Casillas[f, c]);
             return ids;
         }
-
-        // ── Chat ──────────────────────────────────────────────────────────────
         private void btnEnviar_Click(object sender, EventArgs e)
         {
             string txt = txtChatInput.Text.Trim();
@@ -323,8 +298,6 @@ namespace LoteriaMexicana.UI.UserControls
             if (r == DialogResult.Yes)
                 OnSolicitarSalida?.Invoke();
         }
-
-        // ── Controles del timer (solo anfitrión) ─────────────────────────────
         private void btnPausarTimer_Click(object sender, EventArgs e)
         {
             if (!_esAnfitrion) return;
@@ -350,7 +323,7 @@ namespace LoteriaMexicana.UI.UserControls
         {
             if (!_esAnfitrion) return;
             _intervaloTimer -= 1_000;
-            if (_intervaloTimer < 1_000) _intervaloTimer = 5_000; // vuelve al inicio
+            if (_intervaloTimer < 1_000) _intervaloTimer = 5_000;
             ActualizarLabelVelocidad();
             if (_timerCantor != null && !_timerPausado)
             {
@@ -363,8 +336,6 @@ namespace LoteriaMexicana.UI.UserControls
 
         private void ActualizarLabelVelocidad() =>
             lblVelocidadActual.Text = $"Vel: {_intervaloTimer / 1000}s";
-
-        // ── Reglas configurables ──────────────────────────────────────────────
         private void EnviarReglas()
         {
             if (!_esAnfitrion || _cliente == null) return;
@@ -377,7 +348,6 @@ namespace LoteriaMexicana.UI.UserControls
 
         private void AplicarReglas(string[] p)
         {
-            // p: ["REGLAS","H","V","D","E","P"]
             if (p.Length < 6) return;
             ValidadorVictoria.ReglaHorizontal = p[1] == "1";
             ValidadorVictoria.ReglaVertical   = p[2] == "1";
@@ -385,7 +355,6 @@ namespace LoteriaMexicana.UI.UserControls
             ValidadorVictoria.ReglaEsquinas   = p[4] == "1";
             ValidadorVictoria.ReglaPoyaCruz   = p[5] == "1";
 
-            // Actualizar UI sin volver a disparar el evento
             HabilitarControlesReglas(false);
             chkHorizontal.CheckedChanged -= (s, e) => EnviarReglas();
             chkVertical.CheckedChanged   -= (s, e) => EnviarReglas();
@@ -410,8 +379,6 @@ namespace LoteriaMexicana.UI.UserControls
             chkEsquinas.Enabled   = habilitado;
             chkPoyaCruz.Enabled   = habilitado;
         }
-
-        // ── Procesamiento de mensajes de red ─────────────────────────────────
         private void ProcesarMensaje(string mensaje)
         {
             if (IsDisposed) return;
@@ -471,7 +438,6 @@ namespace LoteriaMexicana.UI.UserControls
             foreach (var tablero in _tableros)
             {
                 tablero.CartasCantadas.Add(id);
-                // Sin resalte visual; MarcarCartaCantada no hace nada
             }
         }
 
@@ -489,10 +455,9 @@ namespace LoteriaMexicana.UI.UserControls
 
             _partidaTerminada = true;
             CongelarJuego();
-            MostrarEnHistorial($"🏆 {ganador} ganó con {figura}.");
+            MostrarEnHistorial($" {ganador} ganó con {figura}.");
             _voz.AnunciarCarta($"¡Lotería! {ganador} ganó");
 
-            // Agregar al scorecard
             _rondaActual++;
             listScorecard.Items.Insert(0, $"Ronda {_rondaActual}: {ganador} ({figura})");
 
@@ -535,14 +500,14 @@ namespace LoteriaMexicana.UI.UserControls
         private void ProcesarPerdedor(string[] p)
         {
             if (p.Length < 3) return;
-            MostrarEnHistorial($"❌ {p[1]} fue descalificado: {p[2]}");
+            MostrarEnHistorial($" {p[1]} fue descalificado: {p[2]}");
         }
 
         private void ProcesarEmpate(string[] p)
         {
             _partidaTerminada = true;
             CongelarJuego();
-            MostrarEnHistorial("⚖ ¡EMPATE detectado!");
+            MostrarEnHistorial(" ¡EMPATE detectado!");
             _voz.AnunciarCarta("Empate detectado.");
 
             if (p.Length < 2) return;
@@ -550,7 +515,6 @@ namespace LoteriaMexicana.UI.UserControls
             var candidatos = p[1].Split(';');
             var nombresEmp = candidatos.Select(c => c.Split('~')[0]).ToList();
             var figurasEmp = candidatos.Select(c => c.Split('~').Length > 1 ? c.Split('~')[1] : "?").ToList();
-            // idsGanadores por candidato: cada entrada tiene nombre~figura~idTabla~ids
             var idsGanPorCandidato = candidatos.Select(c =>
             {
                 var partes = c.Split('~');
@@ -563,13 +527,12 @@ namespace LoteriaMexicana.UI.UserControls
 
             if (_esAnfitrion)
             {
-                // El anfitrión elige el método de desempate
-                MostrarEnHistorial($"⚖ Empataron: {string.Join(" vs ", nombresEmp)}");
+                MostrarEnHistorial($" Empataron: {string.Join(" vs ", nombresEmp)}");
                 MostrarDialogoDesempate(nombresEmp, figurasEmp, idsGanPorCandidato, candidatos);
             }
             else
             {
-                MostrarEnHistorial($"⚖ Empataron: {string.Join(" vs ", nombresEmp)}. El anfitrión decidirá el desempate.");
+                MostrarEnHistorial($" Empataron: {string.Join(" vs ", nombresEmp)}. El anfitrión decidirá el desempate.");
             }
         }
         private void MostrarDialogoDesempate(
@@ -578,7 +541,6 @@ namespace LoteriaMexicana.UI.UserControls
          List<List<int>> idsGanPorCandidato,
               string[] candidatosRaw)
         {
-            // Construir mensaje informativo
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("¿Cómo deseas resolver el empate?\n");
             for (int i = 0; i < nombres.Count; i++)
@@ -595,12 +557,10 @@ namespace LoteriaMexicana.UI.UserControls
 
             if (resp == DialogResult.Yes)
             {
-                // ── Desempate por carta mayor ────────────────────────────────────
                 ResolverPorCartaMayor(nombres, figuras, idsGanPorCandidato);
             }
             else
             {
-                // ── Ronda extra ──────────────────────────────────────────────────
                 IniciarRondaDesempate(nombres, candidatosRaw);
             }
         }
@@ -610,7 +570,6 @@ namespace LoteriaMexicana.UI.UserControls
     List<string> figuras,
     List<List<int>> idsGanPorCandidato)
         {
-            // Comparar: primero carta más alta, luego segunda más alta, etc.
             int ganadorIdx = 0;
             for (int i = 1; i < idsGanPorCandidato.Count; i++)
             {
@@ -620,21 +579,18 @@ namespace LoteriaMexicana.UI.UserControls
                 int cmp = 0;
                 for (int k = 0; k < Math.Min(listaA.Count, listaB.Count); k++)
                 {
-                    if (listaA[k] > listaB[k]) { cmp = -1; break; }  // A gana
-                    if (listaA[k] < listaB[k]) { cmp = 1; break; }  // B gana
+                    if (listaA[k] > listaB[k]) { cmp = -1; break; }
+                    if (listaA[k] < listaB[k]) { cmp = 1; break; }
                 }
-                // Si todo igual, el que tenga más cartas gana; si igual, queda el actual
                 if (cmp == 0 && listaB.Count > listaA.Count) cmp = 1;
                 if (cmp > 0) ganadorIdx = i;
             }
 
             string ganador = nombres[ganadorIdx];
             string figura = figuras[ganadorIdx];
-            MostrarEnHistorial($"🏆 Desempate por carta mayor: {ganador} gana con {figura}.");
+            MostrarEnHistorial($" Desempate por carta mayor: {ganador} gana con {figura}.");
             _servidor.Transmitir($"GANADOR|{ganador}|{figura} (carta mayor)");
         }
-
-        // ── Timer cantor ──────────────────────────────────────────────────────
         private void IniciarTimerCantor()
         {
             _timerCantor?.Stop();
@@ -659,10 +615,8 @@ namespace LoteriaMexicana.UI.UserControls
                 _timerCantor.Start();
             }
         }
-        // ── Construcción de tablas ─────────────────────────────────────────────
         private void ConstruirTablas()
         {
-            // Liberar imágenes antes de limpiar
             foreach (Control c in panelTablas.Controls)
             {
                 if (c is GroupBox gb)
@@ -672,26 +626,20 @@ namespace LoteriaMexicana.UI.UserControls
             panelTablas.Controls.Clear();
             _ctrlTablas.Clear();
 
-            int total = Math.Min(_tableros.Count, 6);  // máximo 6
-
-            // Layout: distribuir en filas según cuántas tablas hay
-            // 1-2 → 1 fila; 3-4 → 2 filas (2+2 o 1+2); 5-6 → 2 filas (3+3 o 3+2)
+            int total = Math.Min(_tableros.Count, 6); 
             panelTablas.FlowDirection = FlowDirection.LeftToRight;
-            panelTablas.WrapContents = total > 2;  // wrap solo con 3+
+            panelTablas.WrapContents = total > 2;
 
             for (int i = 0; i < total; i++)
             {
                 var ctrl = new ControladorTablero(_tableros[i], i, total);
                 _ctrlTablas.Add(ctrl);
                 var gb = ctrl.ConstruirGrupBox();
-
-                // Con 3+ tablas, forzar salto de línea cada mitad para hacer 2 filas
                 if (total >= 3)
                 {
                     int porFila = (int)Math.Ceiling(total / 2.0);
                     if (i > 0 && i % porFila == 0)
                     {
-                        // Insertar spacer invisible para forzar nueva fila
                         var spacer = new Panel
                         {
                             Width = panelTablas.ClientSize.Width,
@@ -708,30 +656,20 @@ namespace LoteriaMexicana.UI.UserControls
         private void IniciarRondaDesempate(List<string> nombresEmpatados, string[] candidatosRaw)
         {
             _jugadoresEnDesempate = nombresEmpatados;
-
-            // Transmitir a todos: quiénes están en ronda de desempate
             string nombresStr = string.Join(",", nombresEmpatados);
             _servidor.Transmitir($"RONDA_DESEMPATE|{nombresStr}");
-
-            // Reiniciar solo el estado de juego (no las tablas completas)
             _partidaTerminada = false;
             _descalificado = false;
             _advertenciasLoteria = 0;
             btnGritarLoteria.Text = "¡ L O T E R Í A !";
             btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
-
-            // El anfitrión puede cantar cartas de nuevo
             if (_mazo != null && !_mazo.EstaAgotado)
             {
                 btnAccionRed.Enabled = true;
                 btnEnviar.Enabled = true;
                 txtChatInput.Enabled = true;
             }
-
-            // Habilitar botón Lotería solo si el anfitrión es uno de los empatados
             btnGritarLoteria.Enabled = nombresEmpatados.Contains(_nombre);
-
-            // Reiniciar tapas de todos los tableros
             foreach (var t in _tableros) t.ReiniciarTapas();
             foreach (var ctrl in _ctrlTablas) ctrl.RefrescarVisual();
 
@@ -750,8 +688,6 @@ namespace LoteriaMexicana.UI.UserControls
             btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
             btnEnviar.Enabled = true;
             txtChatInput.Enabled = true;
-
-            // Solo los empatados pueden gritar Lotería
             bool puedeJugar = empatados.Contains(_nombre);
             btnGritarLoteria.Enabled = puedeJugar;
 
@@ -759,12 +695,10 @@ namespace LoteriaMexicana.UI.UserControls
             foreach (var ctrl in _ctrlTablas) ctrl.RefrescarVisual();
 
             string msg = puedeJugar
-                ? "🔁 RONDA DE DESEMPATE — ¡Tú estás en el desempate! Sigue marcando cartas."
-                : "🔁 RONDA DE DESEMPATE — Solo pueden ganar: " + string.Join(", ", empatados);
+                ? " RONDA DE DESEMPATE — ¡Tú estás en el desempate! Sigue marcando cartas."
+                : " RONDA DE DESEMPATE — Solo pueden ganar: " + string.Join(", ", empatados);
             MostrarEnHistorial(msg);
         }
-
-        // ── Helpers UI ────────────────────────────────────────────────────────
         private void MostrarEnHistorial(string linea)
         {
             if (IsDisposed) return;
