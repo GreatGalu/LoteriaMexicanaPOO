@@ -30,9 +30,9 @@ namespace LoteriaMexicana.Controllers
             _celdas  = new PictureBox[Tablero.FILAS, Tablero.COLUMNAS];
 
             // Tamaño dinámico de celda según cuántas tablas coexisten
-            if (totalTablas <= 2)      { _anchoCelda = 78; _altoCelda = 102; }
-            else if (totalTablas <= 4) { _anchoCelda = 68; _altoCelda = 90;  }
-            else                       { _anchoCelda = 58; _altoCelda = 78;  }
+            if (totalTablas <= 2)      { _anchoCelda = 88; _altoCelda = 118; }
+            else if (totalTablas <= 4) { _anchoCelda = 74; _altoCelda = 98;  }
+            else                       { _anchoCelda = 60; _altoCelda = 80;  }
         }
 
         public GroupBox ConstruirGrupBox()

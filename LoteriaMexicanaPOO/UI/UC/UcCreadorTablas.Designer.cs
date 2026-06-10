@@ -1,4 +1,4 @@
-﻿using LoteriaMexicana.Logic;
+using LoteriaMexicana.Logic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -19,6 +19,7 @@ namespace LoteriaMexicana.UI.UserControls
         internal Panel panelGrid;
         internal FlowLayoutPanel panelCatalogo;
         internal Button btnConfirmar;
+        internal Button btnGuardarJson;
         internal Button btnLimpiar;
         internal Button btnAleatorio;
         private Panel panelSuperior;
@@ -33,6 +34,7 @@ namespace LoteriaMexicana.UI.UserControls
             panelGrid = new Panel();
             panelCatalogo = new FlowLayoutPanel();
             btnConfirmar = new Button();
+            btnGuardarJson = new Button();
             btnLimpiar = new Button();
             btnAleatorio = new Button();
             panelSuperior = new Panel();
@@ -104,6 +106,22 @@ namespace LoteriaMexicana.UI.UserControls
             btnConfirmar.Text = "✔ Confirmar";
             btnConfirmar.UseVisualStyleBackColor = false;
             // 
+            // btnGuardarJson
+            // 
+            btnGuardarJson.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnGuardarJson.BackColor = Color.FromArgb(40, 80, 140);
+            btnGuardarJson.Cursor = Cursors.Hand;
+            btnGuardarJson.FlatAppearance.BorderSize = 0;
+            btnGuardarJson.FlatStyle = FlatStyle.Flat;
+            btnGuardarJson.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnGuardarJson.ForeColor = Color.White;
+            btnGuardarJson.Location = new Point(1632, 10);
+            btnGuardarJson.Name = "btnGuardarJson";
+            btnGuardarJson.Size = new Size(130, 32);
+            btnGuardarJson.TabIndex = 3;
+            btnGuardarJson.Text = "💾 Guardar JSON";
+            btnGuardarJson.UseVisualStyleBackColor = false;
+            // 
             // btnLimpiar
             // 
             btnLimpiar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
@@ -113,7 +131,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnLimpiar.FlatStyle = FlatStyle.Flat;
             btnLimpiar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnLimpiar.ForeColor = Color.White;
-            btnLimpiar.Location = new Point(1652, 10);
+            btnLimpiar.Location = new Point(1512, 10);
             btnLimpiar.Name = "btnLimpiar";
             btnLimpiar.Size = new Size(110, 32);
             btnLimpiar.TabIndex = 1;
@@ -129,7 +147,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnAleatorio.FlatStyle = FlatStyle.Flat;
             btnAleatorio.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnAleatorio.ForeColor = Color.White;
-            btnAleatorio.Location = new Point(1522, 10);
+            btnAleatorio.Location = new Point(1382, 10);
             btnAleatorio.Name = "btnAleatorio";
             btnAleatorio.Size = new Size(120, 32);
             btnAleatorio.TabIndex = 2;
@@ -151,6 +169,7 @@ namespace LoteriaMexicana.UI.UserControls
             // 
             panelInferior.BackColor = Color.FromArgb(20, 20, 22);
             panelInferior.Controls.Add(btnConfirmar);
+            panelInferior.Controls.Add(btnGuardarJson);
             panelInferior.Controls.Add(btnLimpiar);
             panelInferior.Controls.Add(btnAleatorio);
             panelInferior.Dock = DockStyle.Bottom;

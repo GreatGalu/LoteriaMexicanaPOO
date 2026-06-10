@@ -33,6 +33,7 @@ namespace LoteriaMexicana.UI.UserControls
         private int    _rondaActual = 0;
         private int    _intervaloTimer = 5_000; // ms
         private bool   _timerPausado = false;
+        private int?   _cartaDobleActual = null;
         private readonly Dictionary<int, string> _nombresCartas = new Dictionary<int, string>();
 
         // ── Constructor ──────────────────────────────────────────────────────
@@ -49,6 +50,19 @@ namespace LoteriaMexicana.UI.UserControls
             chkDiagonal.CheckedChanged   += (s, e) => EnviarReglas();
             chkEsquinas.CheckedChanged   += (s, e) => EnviarReglas();
             chkPoyaCruz.CheckedChanged   += (s, e) => EnviarReglas();
+
+            chkAutoCantar.CheckedChanged += (s, e) =>
+            {
+                if (chkAutoCantar.Checked && !_timerPausado && !_partidaTerminada && _mazo != null && !_mazo.EstaAgotado)
+                {
+                    IniciarTimerCantor();
+                    _timerCantor.Start();
+                }
+                else
+                {
+                    _timerCantor?.Stop();
+                }
+            };
         }
 
         // ── Configuración inicial ─────────────────────────────────────────────
@@ -101,11 +115,36 @@ namespace LoteriaMexicana.UI.UserControls
         }
 
         // ── Inicio de partida ─────────────────────────────────────────────────
+        public int? ObtenerCartaDobleSiAplica()
+        {
+            if (chkCartasDobles.Checked) return new Random().Next(1, 55);
+            return null;
+        }
+
         private void BtnIniciar_Click(object sender, EventArgs e)
         {
             btnAccionRed.Text    = "Siguiente ▶";
             btnAccionRed.Click  -= BtnIniciar_Click;
             btnAccionRed.Click  += (s, ev) => CantarSiguienteCarta();
+            
+            if (_esAnfitrion)
+            {
+                int? idDoble = ObtenerCartaDobleSiAplica();
+                if (idDoble.HasValue)
+                {
+                    _servidor.Transmitir($"MODO_DOBLE|{idDoble.Value}");
+                }
+                else
+                {
+                    _servidor.Transmitir($"MODO_DOBLE|0");
+                }
+                _cartaDobleActual = idDoble;
+                _mazo.Reiniciar(idDoble);
+                _mazo.Barajar();
+                foreach (var t in _tableros) t.GenerarAleatorio(idDoble);
+                ConstruirTablas();
+            }
+
             MostrarEnHistorial("=== Partida iniciada ===");
             CantarSiguienteCarta();
         }
@@ -348,6 +387,7 @@ namespace LoteriaMexicana.UI.UserControls
             string[] p = mensaje.Split('|');
             switch (p[0])
             {
+                case "MODO_DOBLE":    ProcesarModoDoble(p);      break;
                 case "CARTA":         ProcesarCarta(p);         break;
                 case "CHAT":          ProcesarChat(p);           break;
                 case "GANADOR":       ProcesarGanador(p);        break;
@@ -356,6 +396,19 @@ namespace LoteriaMexicana.UI.UserControls
                 case "JUGADORES":     ProcesarJugadores(p);      break;
                 case "PERDEDOR":      ProcesarPerdedor(p);       break;
                 case "TIE":           ProcesarEmpate(p);         break;
+            }
+        }
+
+        private void ProcesarModoDoble(string[] p)
+        {
+            if (p.Length < 2 || !int.TryParse(p[1], out int id)) return;
+            if (id == 0) _cartaDobleActual = null;
+            else _cartaDobleActual = id;
+            if (_cartaDobleActual.HasValue)
+            {
+                string nombre = _nombresCartas.TryGetValue(_cartaDobleActual.Value, out string n) ? n : $"carta {_cartaDobleActual.Value}";
+                MostrarEnHistorial($"⭐ MODO CARTAS DOBLES ACTIVADO ⭐");
+                MostrarEnHistorial($"Carta duplicada en todos los tableros: {nombre}");
             }
         }
 
@@ -378,8 +431,7 @@ namespace LoteriaMexicana.UI.UserControls
 
             foreach (var tablero in _tableros)
             {
-                if (!tablero.CartasCantadas.Contains(id))
-                    tablero.CartasCantadas.Add(id);
+                tablero.CartasCantadas.Add(id);
                 // Sin resalte visual; MarcarCartaCantada no hace nada
             }
         }
@@ -425,7 +477,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
             btnEnviar.Enabled         = true;
             txtChatInput.Enabled      = true;
-            foreach (var tablero in _tableros) tablero.GenerarAleatorio();
+            foreach (var tablero in _tableros) tablero.GenerarAleatorio(_cartaDobleActual);
             ConstruirTablas();
             OnNuevaPartidaRecibida?.Invoke();
         }

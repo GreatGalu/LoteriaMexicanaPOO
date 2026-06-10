@@ -37,6 +37,7 @@ namespace LoteriaMexicana.UI.UserControls
         internal CheckBox  chkDiagonal;
         internal CheckBox  chkEsquinas;
         internal CheckBox  chkPoyaCruz;
+        internal CheckBox  chkCartasDobles;
 
         // ── Lista de jugadores ───────────────────────────────────────────────
         internal GroupBox  grpJugadores;
@@ -75,6 +76,7 @@ namespace LoteriaMexicana.UI.UserControls
             chkDiagonal         = new CheckBox();
             chkEsquinas         = new CheckBox();
             chkPoyaCruz         = new CheckBox();
+            chkCartasDobles     = new CheckBox();
 
             // Jugadores
             grpJugadores        = new GroupBox();
@@ -264,6 +266,7 @@ namespace LoteriaMexicana.UI.UserControls
             grpReglas.Size      = new Size(290, 118);
             grpReglas.Text      = " Formas de ganar ";
             grpReglas.Controls.Add(chkPoyaCruz);
+            grpReglas.Controls.Add(chkCartasDobles);
             grpReglas.Controls.Add(chkEsquinas);
             grpReglas.Controls.Add(chkDiagonal);
             grpReglas.Controls.Add(chkVertical);
@@ -313,6 +316,14 @@ namespace LoteriaMexicana.UI.UserControls
             chkPoyaCruz.Name      = "chkPoyaCruz";
             chkPoyaCruz.Text      = "Poya / Cruz";
             chkPoyaCruz.UseVisualStyleBackColor = true;
+
+            chkCartasDobles.AutoSize  = true;
+            chkCartasDobles.Font      = new Font("Segoe UI", 8F, FontStyle.Bold);
+            chkCartasDobles.ForeColor = Color.FromArgb(220, 100, 100);
+            chkCartasDobles.Location  = new Point(10, 80);
+            chkCartasDobles.Name      = "chkCartasDobles";
+            chkCartasDobles.Text      = "⭐ Cartas Dobles";
+            chkCartasDobles.UseVisualStyleBackColor = true;
 
             // ── grpJugadores ─────────────────────────────────────────────────
             grpJugadores.BackColor = Color.FromArgb(30, 30, 34);

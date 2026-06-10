@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace LoteriaMexicana.UI.UserControls
@@ -89,7 +89,7 @@ namespace LoteriaMexicana.UI.UserControls
             lblTablas.Name = "lblTablas";
             lblTablas.Size = new Size(160, 18);
             lblTablas.TabIndex = 1;
-            lblTablas.Text = "Cantidad de tablas (1-3)";
+            lblTablas.Text = "Cantidad de tablas (1-6)";
             // 
             // nudTablas
             // 
@@ -97,7 +97,7 @@ namespace LoteriaMexicana.UI.UserControls
             nudTablas.Font = new Font("Segoe UI", 10F);
             nudTablas.ForeColor = Color.White;
             nudTablas.Location = new Point(32, 108);
-            nudTablas.Maximum = new decimal(new int[] { 3, 0, 0, 0 });
+            nudTablas.Maximum = new decimal(new int[] { 6, 0, 0, 0 });
             nudTablas.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             nudTablas.Name = "nudTablas";
             nudTablas.Size = new Size(155, 30);

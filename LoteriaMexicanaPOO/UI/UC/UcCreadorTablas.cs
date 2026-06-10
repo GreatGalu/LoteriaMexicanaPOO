@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -22,6 +22,7 @@ namespace LoteriaMexicana.UI.UserControls
             InitializeComponent();
             lblTituloCreador.Text = $"TABLA {_numeroTabla} — Elige 20 cartas en orden";
             btnConfirmar.Click += btnConfirmar_Click;
+            btnGuardarJson.Click += btnGuardarJson_Click;
             btnLimpiar.Click += btnLimpiar_Click;
             btnAleatorio.Click += btnAleatorio_Click;
             ConstruirGrid();
@@ -33,7 +34,7 @@ namespace LoteriaMexicana.UI.UserControls
         {
             if (_cursor < Tablero.TOTAL_CASILLAS)
             {
-                MessageBox.Show("Debes seleccionar las 20 cartas antes de confirmar.",
+                MessageBox.Show($"Debes seleccionar las {Tablero.TOTAL_CASILLAS} cartas antes de confirmar.",
                     "Tabla Incompleta", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -47,6 +48,36 @@ namespace LoteriaMexicana.UI.UserControls
             {
                 MessageBox.Show($"Error al guardar la tabla:\n{ex.Message}",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnGuardarJson_Click(object sender, EventArgs e)
+        {
+            if (_cursor < Tablero.TOTAL_CASILLAS)
+            {
+                MessageBox.Show($"Debes seleccionar las {Tablero.TOTAL_CASILLAS} cartas antes de guardar.",
+                    "Tabla Incompleta", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using var dialog = new SaveFileDialog
+            {
+                Filter = "Archivos JSON (*.json)|*.json",
+                Title = "Guardar Tabla"
+            };
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    string contenido = string.Join(",", _ids.Take(Tablero.TOTAL_CASILLAS));
+                    System.IO.File.WriteAllText(dialog.FileName, contenido);
+                    MessageBox.Show("Tabla guardada correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al guardar la tabla:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 

@@ -23,16 +23,38 @@ namespace LoteriaMexicana.Logic
             Tapas    = new bool[FILAS, COLUMNAS];
         }
 
-        public void GenerarAleatorio()
+        public void GenerarAleatorio(int? idCartaDoble = null)
         {
             var pool = Enumerable.Range(ID_MIN, ID_MAX).ToList();
+            if (idCartaDoble.HasValue)
+            {
+                pool.Remove(idCartaDoble.Value); // Evitamos seleccionarla otra vez
+            }
+
             var rng  = new Random();
             for (int i = pool.Count - 1; i > 0; i--)
             {
                 int j = rng.Next(i + 1);
                 (pool[i], pool[j]) = (pool[j], pool[i]);
             }
-            LlenarMatriz(pool.Take(TOTAL_CASILLAS).ToArray());
+
+            int cartasAExtraer = idCartaDoble.HasValue ? TOTAL_CASILLAS - 2 : TOTAL_CASILLAS;
+            var seleccionadas = pool.Take(cartasAExtraer).ToList();
+
+            if (idCartaDoble.HasValue)
+            {
+                seleccionadas.Add(idCartaDoble.Value);
+                seleccionadas.Add(idCartaDoble.Value);
+
+                // Volvemos a mezclar para distribuir la carta doble
+                for (int i = seleccionadas.Count - 1; i > 0; i--)
+                {
+                    int j = rng.Next(i + 1);
+                    (seleccionadas[i], seleccionadas[j]) = (seleccionadas[j], seleccionadas[i]);
+                }
+            }
+
+            LlenarMatriz(seleccionadas.ToArray());
             ReiniciarTapas();
         }
 

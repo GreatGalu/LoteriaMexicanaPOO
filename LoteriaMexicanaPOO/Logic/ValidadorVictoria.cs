@@ -45,14 +45,28 @@ namespace LoteriaMexicana.Logic
                 return new DetalleValidacion { Resultado = ResultadoValidacion.SinFigura };
 
             var trampa = new List<int>();
+            var conteoCantadas = new Dictionary<int, int>();
+            foreach (var id in cartasCantadas)
+            {
+                if (!conteoCantadas.ContainsKey(id)) conteoCantadas[id] = 0;
+                conteoCantadas[id]++;
+            }
+
+            var conteoTapadas = new Dictionary<int, int>();
             for (int f = 0; f < FILAS; f++)
             {
                 for (int c = 0; c < COLUMNAS; c++)
                 {
                     if (!tapas[f, c]) continue;
                     int idCarta = casillas[f, c];
-                    if (!cartasCantadas.Contains(idCarta))
+
+                    if (!conteoTapadas.ContainsKey(idCarta)) conteoTapadas[idCarta] = 0;
+                    conteoTapadas[idCarta]++;
+
+                    if (!conteoCantadas.ContainsKey(idCarta) || conteoTapadas[idCarta] > conteoCantadas[idCarta])
+                    {
                         trampa.Add(idCarta);
+                    }
                 }
             }
 
@@ -139,11 +153,8 @@ namespace LoteriaMexicana.Logic
         public static bool ValidarPoyaOCruz(bool[,] tapas)
         {
             ValidarDimension(tapas);
-            // Columnas centrales en una tabla de 4 cols: cols 1 y 2
-            // Fila central en una tabla de 5 filas: fila 2
-            const int FILA_CENTRAL = 2;
-            if (FilaCompleta(tapas, FILA_CENTRAL) && ColumnaCompleta(tapas, 1)) return true;
-            if (FilaCompleta(tapas, FILA_CENTRAL) && ColumnaCompleta(tapas, 2)) return true;
+            // Centro exacto en 5x5 es fila 2, col 2
+            if (FilaCompleta(tapas, 2) && ColumnaCompleta(tapas, 2)) return true;
             return false;
         }
 

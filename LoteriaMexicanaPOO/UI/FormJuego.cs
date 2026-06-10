@@ -117,8 +117,19 @@ namespace LoteriaMexicana.UI
             _overlayPostPartida.OnNuevaPartida += () =>
             {
                 QuitarOverlayPostPartida();
-                if (_mazo != null) { _mazo.Reiniciar(); _mazo.Barajar(); }
-                foreach (var t in _tablerosActivos) t.GenerarAleatorio();
+                int? idCartaDoble = _ucJuego.ObtenerCartaDobleSiAplica();
+                
+                if (idCartaDoble.HasValue)
+                {
+                    _servidor?.Transmitir($"MODO_DOBLE|{idCartaDoble.Value}");
+                }
+                else
+                {
+                    _servidor?.Transmitir($"MODO_DOBLE|0");
+                }
+
+                if (_mazo != null) { _mazo.Reiniciar(idCartaDoble); _mazo.Barajar(); }
+                foreach (var t in _tablerosActivos) t.GenerarAleatorio(idCartaDoble);
                 _ucJuego?.ReiniciarPartida(_mazo);
                 _servidor?.Transmitir("NUEVA_PARTIDA");
             };
@@ -155,12 +166,55 @@ namespace LoteriaMexicana.UI
             var lista = new List<Tablero>();
             for (int i = 0; i < cantidad; i++)
             {
-                var resp = MessageBox.Show(
-                    $"Tabla {i + 1}: ¿Crearla de forma personalizada?\n\nSí = elegir cartas\nNo = aleatoria",
-                    $"Tabla {i + 1}", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                lista.Add(resp == DialogResult.Yes
-                    ? CrearTableroConEditor(i + 1)
-                    : CrearTableroAleatorio());
+                bool tablaValida = false;
+                while (!tablaValida)
+                {
+                    var resp = MessageBox.Show(
+                        $"Tabla {i + 1}: ¿Cómo deseas generar esta tabla?\n\nSí = Crear en Editor\nNo = Cargar desde JSON\nCancelar = Aleatoria",
+                        $"Tabla {i + 1}", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    
+                    Tablero nuevaTabla = null;
+
+                    if (resp == DialogResult.Yes)
+                    {
+                        nuevaTabla = CrearTableroConEditor(i + 1);
+                    }
+                    else if (resp == DialogResult.No)
+                    {
+                        nuevaTabla = CargarTableroDesdeArchivo();
+                        if (nuevaTabla == null) nuevaTabla = CrearTableroAleatorio();
+                    }
+                    else
+                    {
+                        nuevaTabla = CrearTableroAleatorio();
+                    }
+
+                    // Verificar duplicados
+                    bool esDuplicada = false;
+                    foreach (var t in lista)
+                    {
+                        if (t.EsIdenticoA(nuevaTabla))
+                        {
+                            esDuplicada = true;
+                            break;
+                        }
+                    }
+
+                    if (esDuplicada)
+                    {
+                        if (resp == DialogResult.Yes || resp == DialogResult.No)
+                        {
+                            MessageBox.Show("Esta tabla es idéntica a una que ya agregaste. Por favor crea/carga una diferente.", 
+                                            "Tabla Duplicada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        // Si es aleatoria, el ciclo while lo volverá a intentar automáticamente sin avisar
+                    }
+                    else
+                    {
+                        lista.Add(nuevaTabla);
+                        tablaValida = true;
+                    }
+                }
             }
             return lista;
         }
@@ -170,6 +224,27 @@ namespace LoteriaMexicana.UI
             var t = new Tablero();
             t.GenerarAleatorio();
             return t;
+        }
+
+        private Tablero CargarTableroDesdeArchivo()
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "Archivos JSON (*.json)|*.json",
+                Title = "Cargar Tabla Guardada"
+            };
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                var t = new Tablero();
+                if (t.CargarDesdeArchivo(dialog.FileName))
+                {
+                    return t;
+                }
+                MessageBox.Show("El archivo no tiene el formato correcto o no contiene la cantidad de cartas necesaria.", 
+                                "Error al cargar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            return null;
         }
 
         private Tablero CrearTableroConEditor(int numero)
