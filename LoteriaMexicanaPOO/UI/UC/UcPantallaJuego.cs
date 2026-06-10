@@ -30,6 +30,7 @@ namespace LoteriaMexicana.UI.UserControls
         private bool   _esAnfitrion = false;
         private bool   _partidaTerminada = false;
         private bool   _descalificado = false;
+        private List<string> _jugadoresEnDesempate = null;
         private int _advertenciasLoteria = 0;
         private const int MAX_ADVERTENCIAS = 3;
         private int    _rondaActual = 0;
@@ -178,6 +179,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnGritarLoteria.Enabled = true;
             btnEnviar.Enabled        = true;
             txtChatInput.Enabled     = true;
+            _jugadoresEnDesempate = null;
 
             // Limpiar historial de cartas
             var miniaturas = new List<PictureBox>();
@@ -218,6 +220,13 @@ namespace LoteriaMexicana.UI.UserControls
         // ── ¡Lotería! ─────────────────────────────────────────────────────────
         private void btnGritarLoteria_Click(object sender, EventArgs e)
         {
+            // Si hay ronda de desempate activa y este jugador no está en ella, no puede ganar
+            if (_jugadoresEnDesempate != null && !_jugadoresEnDesempate.Contains(_nombre))
+            {
+                MessageBox.Show("Estás fuera de la ronda de desempate. Solo pueden ganar los jugadores empatados.",
+                    "No puedes ganar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             if (_partidaTerminada || _descalificado || _cliente == null) return;
             btnGritarLoteria.Enabled = false;  // anti-doble-click
 
@@ -425,6 +434,7 @@ namespace LoteriaMexicana.UI.UserControls
                 case "JUGADORES":     ProcesarJugadores(p);      break;
                 case "PERDEDOR":      ProcesarPerdedor(p);       break;
                 case "TIE":           ProcesarEmpate(p);         break;
+                case "RONDA_DESEMPATE": ProcesarRondaDesempate(p); break;
             }
         }
 
@@ -510,6 +520,7 @@ namespace LoteriaMexicana.UI.UserControls
             foreach (var tablero in _tableros) tablero.GenerarAleatorio(_cartaDobleActual);
             ConstruirTablas();
             OnNuevaPartidaRecibida?.Invoke();
+            _jugadoresEnDesempate = null;
         }
 
         private void ProcesarJugadores(string[] p)
@@ -529,32 +540,98 @@ namespace LoteriaMexicana.UI.UserControls
 
         private void ProcesarEmpate(string[] p)
         {
-            // TIE|jugador1~figura~idTabla~idsGanadores;jugador2~...
             _partidaTerminada = true;
             CongelarJuego();
-            MostrarEnHistorial("⚖ ¡EMPATE detectado! Esperando resolución del anfitrión...");
-            _voz.AnunciarCarta("Empate. Resolviendo...");
+            MostrarEnHistorial("⚖ ¡EMPATE detectado!");
+            _voz.AnunciarCarta("Empate detectado.");
 
             if (p.Length < 2) return;
+
             var candidatos = p[1].Split(';');
-            string primeroNombre = candidatos[0].Split('~')[0];
-            string primeraFigura = candidatos.Length > 0 && candidatos[0].Split('~').Length > 1
-                ? candidatos[0].Split('~')[1] : "desconocida";
-
-            // Construir listas para el evento de empate
-            var nombresEmp  = candidatos.Select(c => c.Split('~')[0]).ToList();
-            var figurasEmp  = candidatos.Select(c => c.Split('~').Length > 1 ? c.Split('~')[1] : "?").ToList();
-
-            // Notificar a FormJuego para mostrar overlay con opciones de desempate
-            var timer = new System.Windows.Forms.Timer { Interval = 800 };
-            timer.Tick += (s, e) =>
+            var nombresEmp = candidatos.Select(c => c.Split('~')[0]).ToList();
+            var figurasEmp = candidatos.Select(c => c.Split('~').Length > 1 ? c.Split('~')[1] : "?").ToList();
+            // idsGanadores por candidato: cada entrada tiene nombre~figura~idTabla~ids
+            var idsGanPorCandidato = candidatos.Select(c =>
             {
-                timer.Stop(); timer.Dispose();
-                if (!IsDisposed)
-                    OnPartidaTerminada?.Invoke($"EMPATE: {string.Join(" vs ", nombresEmp)}",
-                                               string.Join(" | ", figurasEmp));
-            };
-            timer.Start();
+                var partes = c.Split('~');
+                if (partes.Length < 4) return new List<int>();
+                return partes[3].Split(',')
+                    .Select(s => int.TryParse(s, out int v) ? v : -1)
+                    .Where(v => v > 0)
+                    .ToList();
+            }).ToList();
+
+            if (_esAnfitrion)
+            {
+                // El anfitrión elige el método de desempate
+                MostrarEnHistorial($"⚖ Empataron: {string.Join(" vs ", nombresEmp)}");
+                MostrarDialogoDesempate(nombresEmp, figurasEmp, idsGanPorCandidato, candidatos);
+            }
+            else
+            {
+                MostrarEnHistorial($"⚖ Empataron: {string.Join(" vs ", nombresEmp)}. El anfitrión decidirá el desempate.");
+            }
+        }
+        private void MostrarDialogoDesempate(
+         List<string> nombres,
+         List<string> figuras,
+         List<List<int>> idsGanPorCandidato,
+              string[] candidatosRaw)
+        {
+            // Construir mensaje informativo
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("¿Cómo deseas resolver el empate?\n");
+            for (int i = 0; i < nombres.Count; i++)
+                sb.AppendLine($"  • {nombres[i]} — {figuras[i]}");
+            sb.AppendLine();
+            sb.AppendLine("[ Sí ]     → Carta mayor  (gana quien tenga la carta con ID más alto)");
+            sb.AppendLine("[ No ]     → Ronda extra  (solo los empatados juegan otra ronda)");
+            sb.AppendLine("[ Cancel ] → Cancelar (volver a elegir)");
+
+            var resp = MessageBox.Show(sb.ToString(), "Desempate — Elige método",
+                MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            if (resp == DialogResult.Cancel) return;
+
+            if (resp == DialogResult.Yes)
+            {
+                // ── Desempate por carta mayor ────────────────────────────────────
+                ResolverPorCartaMayor(nombres, figuras, idsGanPorCandidato);
+            }
+            else
+            {
+                // ── Ronda extra ──────────────────────────────────────────────────
+                IniciarRondaDesempate(nombres, candidatosRaw);
+            }
+        }
+
+        private void ResolverPorCartaMayor(
+    List<string> nombres,
+    List<string> figuras,
+    List<List<int>> idsGanPorCandidato)
+        {
+            // Comparar: primero carta más alta, luego segunda más alta, etc.
+            int ganadorIdx = 0;
+            for (int i = 1; i < idsGanPorCandidato.Count; i++)
+            {
+                var listaA = idsGanPorCandidato[ganadorIdx].OrderByDescending(x => x).ToList();
+                var listaB = idsGanPorCandidato[i].OrderByDescending(x => x).ToList();
+
+                int cmp = 0;
+                for (int k = 0; k < Math.Min(listaA.Count, listaB.Count); k++)
+                {
+                    if (listaA[k] > listaB[k]) { cmp = -1; break; }  // A gana
+                    if (listaA[k] < listaB[k]) { cmp = 1; break; }  // B gana
+                }
+                // Si todo igual, el que tenga más cartas gana; si igual, queda el actual
+                if (cmp == 0 && listaB.Count > listaA.Count) cmp = 1;
+                if (cmp > 0) ganadorIdx = i;
+            }
+
+            string ganador = nombres[ganadorIdx];
+            string figura = figuras[ganadorIdx];
+            MostrarEnHistorial($"🏆 Desempate por carta mayor: {ganador} gana con {figura}.");
+            _servidor.Transmitir($"GANADOR|{ganador}|{figura} (carta mayor)");
         }
 
         // ── Timer cantor ──────────────────────────────────────────────────────
@@ -582,7 +659,6 @@ namespace LoteriaMexicana.UI.UserControls
                 _timerCantor.Start();
             }
         }
-
         // ── Construcción de tablas ─────────────────────────────────────────────
         private void ConstruirTablas()
         {
@@ -629,6 +705,65 @@ namespace LoteriaMexicana.UI.UserControls
                 panelTablas.Controls.Add(gb);
             }
         }
+        private void IniciarRondaDesempate(List<string> nombresEmpatados, string[] candidatosRaw)
+        {
+            _jugadoresEnDesempate = nombresEmpatados;
+
+            // Transmitir a todos: quiénes están en ronda de desempate
+            string nombresStr = string.Join(",", nombresEmpatados);
+            _servidor.Transmitir($"RONDA_DESEMPATE|{nombresStr}");
+
+            // Reiniciar solo el estado de juego (no las tablas completas)
+            _partidaTerminada = false;
+            _descalificado = false;
+            _advertenciasLoteria = 0;
+            btnGritarLoteria.Text = "¡ L O T E R Í A !";
+            btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
+
+            // El anfitrión puede cantar cartas de nuevo
+            if (_mazo != null && !_mazo.EstaAgotado)
+            {
+                btnAccionRed.Enabled = true;
+                btnEnviar.Enabled = true;
+                txtChatInput.Enabled = true;
+            }
+
+            // Habilitar botón Lotería solo si el anfitrión es uno de los empatados
+            btnGritarLoteria.Enabled = nombresEmpatados.Contains(_nombre);
+
+            // Reiniciar tapas de todos los tableros
+            foreach (var t in _tableros) t.ReiniciarTapas();
+            foreach (var ctrl in _ctrlTablas) ctrl.RefrescarVisual();
+
+            MostrarEnHistorial($"🔁 RONDA DE DESEMPATE — Solo pueden ganar: {string.Join(", ", nombresEmpatados)}");
+        }
+        private void ProcesarRondaDesempate(string[] p)
+        {
+            if (p.Length < 2) return;
+            var empatados = p[1].Split(',').ToList();
+            _jugadoresEnDesempate = empatados;
+
+            _partidaTerminada = false;
+            _descalificado = false;
+            _advertenciasLoteria = 0;
+            btnGritarLoteria.Text = "¡ L O T E R Í A !";
+            btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
+            btnEnviar.Enabled = true;
+            txtChatInput.Enabled = true;
+
+            // Solo los empatados pueden gritar Lotería
+            bool puedeJugar = empatados.Contains(_nombre);
+            btnGritarLoteria.Enabled = puedeJugar;
+
+            foreach (var t in _tableros) t.ReiniciarTapas();
+            foreach (var ctrl in _ctrlTablas) ctrl.RefrescarVisual();
+
+            string msg = puedeJugar
+                ? "🔁 RONDA DE DESEMPATE — ¡Tú estás en el desempate! Sigue marcando cartas."
+                : "🔁 RONDA DE DESEMPATE — Solo pueden ganar: " + string.Join(", ", empatados);
+            MostrarEnHistorial(msg);
+        }
+
         // ── Helpers UI ────────────────────────────────────────────────────────
         private void MostrarEnHistorial(string linea)
         {
