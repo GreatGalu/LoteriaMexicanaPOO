@@ -30,6 +30,8 @@ namespace LoteriaMexicana.UI.UserControls
         private bool   _esAnfitrion = false;
         private bool   _partidaTerminada = false;
         private bool   _descalificado = false;
+        private int _advertenciasLoteria = 0;
+        private const int MAX_ADVERTENCIAS = 3;
         private int    _rondaActual = 0;
         private int    _intervaloTimer = 5_000; // ms
         private bool   _timerPausado = false;
@@ -172,6 +174,7 @@ namespace LoteriaMexicana.UI.UserControls
             _descalificado   = false;
             _intervaloTimer  = 5_000;
             _timerPausado    = false;
+            _advertenciasLoteria = 0;
             btnGritarLoteria.Enabled = true;
             btnEnviar.Enabled        = true;
             txtChatInput.Enabled     = true;
@@ -216,6 +219,7 @@ namespace LoteriaMexicana.UI.UserControls
         private void btnGritarLoteria_Click(object sender, EventArgs e)
         {
             if (_partidaTerminada || _descalificado || _cliente == null) return;
+            btnGritarLoteria.Enabled = false;  // anti-doble-click
 
             for (int i = 0; i < _tableros.Count; i++)
             {
@@ -227,28 +231,53 @@ namespace LoteriaMexicana.UI.UserControls
                 switch (detalle.Resultado)
                 {
                     case ValidadorVictoria.ResultadoValidacion.Victoria:
-                        // Enviar reclamo al servidor (que detectará empates)
                         var idsGanadores = ObtenerIdsTapados(_tableros[i]);
-                        var todosIds     = string.Join(",", _tableros[i].ObtenerIdsEnOrden());
-                        var idsGanStr    = string.Join(",", idsGanadores);
+                        var todosIds = string.Join(",", _tableros[i].ObtenerIdsEnOrden());
+                        var idsGanStr = string.Join(",", idsGanadores);
                         _cliente.Enviar($"RECLAMO_LOTERIA|{_nombre}|{detalle.Figura} (Tabla {i + 1})|{i}|{idsGanStr}|{todosIds}");
-                        return;
+                        return;  // botón permanece deshabilitado hasta respuesta del servidor
 
                     case ValidadorVictoria.ResultadoValidacion.Trampa:
-                        // Penalización: marcó casillas no cantadas
                         string ids = string.Join(", #", detalle.CartasTrampa);
-                        MostrarEnHistorial($"⚠ Penalización: casillas no cantadas tapadas #{ids}");
-                        _cliente.Enviar($"PERDEDOR|{_nombre}|Marcó cartas no cantadas: #{ids}");
-                        Descalificar("Marcaste casillas cuyas cartas aún no han salido.");
+                        _advertenciasLoteria++;
+                        int restantes = MAX_ADVERTENCIAS - _advertenciasLoteria;
+
+                        if (_advertenciasLoteria >= MAX_ADVERTENCIAS)
+                        {
+                            MostrarEnHistorial($"⚠ Trampa detectada (#{ids}) — DESCALIFICADO.");
+                            _cliente.Enviar($"PERDEDOR|{_nombre}|Marcó cartas no cantadas: #{ids}");
+                            Descalificar("Marcaste casillas cuyas cartas aún no han salido tres veces.");
+                        }
+                        else
+                        {
+                            MostrarEnHistorial($"⚠ Advertencia {_advertenciasLoteria}/{MAX_ADVERTENCIAS}: casillas no cantadas tapadas #{ids}");
+                            MessageBox.Show(
+                                $"⚠ Advertencia {_advertenciasLoteria} de {MAX_ADVERTENCIAS}\n\nTienes casillas marcadas cuyas cartas aún no han salido.\nSi llegas a {MAX_ADVERTENCIAS} advertencias serás descalificado.",
+                                "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            btnGritarLoteria.Enabled = true;  // puede seguir jugando
+                        }
                         return;
                 }
             }
 
-            // Sin figura válida: descalificación por cantar sin figura
-            _cliente.Enviar($"PERDEDOR|{_nombre}|Cantó Lotería sin completar ninguna figura.");
-            Descalificar("No completaste ninguna figura de las reglas activas.");
-        }
+            // Sin figura válida
+            _advertenciasLoteria++;
+            int advsRestantes = MAX_ADVERTENCIAS - _advertenciasLoteria;
 
+            if (_advertenciasLoteria >= MAX_ADVERTENCIAS)
+            {
+                _cliente.Enviar($"PERDEDOR|{_nombre}|Cantó Lotería sin completar ninguna figura (3 veces).");
+                Descalificar("Cantaste Lotería sin figura tres veces.");
+            }
+            else
+            {
+                MostrarEnHistorial($"⚠ Advertencia {_advertenciasLoteria}/{MAX_ADVERTENCIAS}: Lotería cantada sin figura.");
+                MessageBox.Show(
+                    $"⚠ Advertencia {_advertenciasLoteria} de {MAX_ADVERTENCIAS}\n\nNo tienes ninguna figura completa.\nSi llegas a {MAX_ADVERTENCIAS} advertencias serás descalificado.",
+                    "Sin figura", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                btnGritarLoteria.Enabled = true;
+            }
+        }
         private void Descalificar(string motivo)
         {
             _descalificado = true;
@@ -472,6 +501,7 @@ namespace LoteriaMexicana.UI.UserControls
             MostrarEnHistorial("=== El anfitrión inició una nueva partida ===");
             _partidaTerminada  = false;
             _descalificado     = false;
+            _advertenciasLoteria = 0;
             btnGritarLoteria.Enabled  = true;
             btnGritarLoteria.Text     = "¡ L O T E R Í A !";
             btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
@@ -556,16 +586,49 @@ namespace LoteriaMexicana.UI.UserControls
         // ── Construcción de tablas ─────────────────────────────────────────────
         private void ConstruirTablas()
         {
+            // Liberar imágenes antes de limpiar
+            foreach (Control c in panelTablas.Controls)
+            {
+                if (c is GroupBox gb)
+                    foreach (Control inner in gb.Controls)
+                        if (inner is PictureBox pb) { pb.Image = null; }
+            }
             panelTablas.Controls.Clear();
             _ctrlTablas.Clear();
-            for (int i = 0; i < _tableros.Count; i++)
+
+            int total = Math.Min(_tableros.Count, 6);  // máximo 6
+
+            // Layout: distribuir en filas según cuántas tablas hay
+            // 1-2 → 1 fila; 3-4 → 2 filas (2+2 o 1+2); 5-6 → 2 filas (3+3 o 3+2)
+            panelTablas.FlowDirection = FlowDirection.LeftToRight;
+            panelTablas.WrapContents = total > 2;  // wrap solo con 3+
+
+            for (int i = 0; i < total; i++)
             {
-                var ctrl = new ControladorTablero(_tableros[i], i, _tableros.Count);
+                var ctrl = new ControladorTablero(_tableros[i], i, total);
                 _ctrlTablas.Add(ctrl);
-                panelTablas.Controls.Add(ctrl.ConstruirGrupBox());
+                var gb = ctrl.ConstruirGrupBox();
+
+                // Con 3+ tablas, forzar salto de línea cada mitad para hacer 2 filas
+                if (total >= 3)
+                {
+                    int porFila = (int)Math.Ceiling(total / 2.0);
+                    if (i > 0 && i % porFila == 0)
+                    {
+                        // Insertar spacer invisible para forzar nueva fila
+                        var spacer = new Panel
+                        {
+                            Width = panelTablas.ClientSize.Width,
+                            Height = 0,
+                            BackColor = Color.Transparent
+                        };
+                        panelTablas.Controls.Add(spacer);
+                    }
+                }
+
+                panelTablas.Controls.Add(gb);
             }
         }
-
         // ── Helpers UI ────────────────────────────────────────────────────────
         private void MostrarEnHistorial(string linea)
         {
