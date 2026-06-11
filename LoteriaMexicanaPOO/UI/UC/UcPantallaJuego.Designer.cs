@@ -56,7 +56,6 @@ namespace LoteriaMexicana.UI.UserControls
         private void InitializeComponent()
         {
             panelIzquierdo = new Panel();
-            lblVelocidadActual = new Label();
             txtHistorialChat = new TextBox();
             panelChat = new Panel();
             txtChatInput = new TextBox();
@@ -72,6 +71,7 @@ namespace LoteriaMexicana.UI.UserControls
             chkCartasDobles = new CheckBox();
             chkTablaLlena = new CheckBox();
             panelAdminControles = new Panel();
+            lblVelocidadActual = new Label();
             btnDisminuirVelocidad = new Button();
             btnAumentarVelocidad = new Button();
             btnPausarTimer = new Button();
@@ -100,7 +100,6 @@ namespace LoteriaMexicana.UI.UserControls
             // panelIzquierdo
             // 
             panelIzquierdo.BackColor = Color.FromArgb(32, 32, 36);
-            panelIzquierdo.Controls.Add(lblVelocidadActual);
             panelIzquierdo.Controls.Add(txtHistorialChat);
             panelIzquierdo.Controls.Add(panelChat);
             panelIzquierdo.Controls.Add(grpScorecard);
@@ -116,18 +115,8 @@ namespace LoteriaMexicana.UI.UserControls
             panelIzquierdo.Location = new Point(0, 0);
             panelIzquierdo.Name = "panelIzquierdo";
             panelIzquierdo.Padding = new Padding(10, 6, 10, 6);
-            panelIzquierdo.Size = new Size(310, 1080);
+            panelIzquierdo.Size = new Size(349, 1080);
             panelIzquierdo.TabIndex = 2;
-            // 
-            // lblVelocidadActual
-            // 
-            lblVelocidadActual.Font = new Font("Segoe UI", 7.5F);
-            lblVelocidadActual.ForeColor = Color.FromArgb(150, 150, 155);
-            lblVelocidadActual.Location = new Point(94, 9);
-            lblVelocidadActual.Name = "lblVelocidadActual";
-            lblVelocidadActual.Size = new Size(74, 14);
-            lblVelocidadActual.TabIndex = 0;
-            lblVelocidadActual.Text = "Vel: 5s";
             // 
             // txtHistorialChat
             // 
@@ -141,7 +130,7 @@ namespace LoteriaMexicana.UI.UserControls
             txtHistorialChat.Name = "txtHistorialChat";
             txtHistorialChat.ReadOnly = true;
             txtHistorialChat.ScrollBars = ScrollBars.Vertical;
-            txtHistorialChat.Size = new Size(290, 335);
+            txtHistorialChat.Size = new Size(329, 335);
             txtHistorialChat.TabIndex = 0;
             // 
             // panelChat
@@ -152,7 +141,7 @@ namespace LoteriaMexicana.UI.UserControls
             panelChat.Dock = DockStyle.Bottom;
             panelChat.Location = new Point(10, 1038);
             panelChat.Name = "panelChat";
-            panelChat.Size = new Size(290, 36);
+            panelChat.Size = new Size(329, 36);
             panelChat.TabIndex = 1;
             // 
             // txtChatInput
@@ -163,7 +152,7 @@ namespace LoteriaMexicana.UI.UserControls
             txtChatInput.ForeColor = Color.White;
             txtChatInput.Location = new Point(0, 4);
             txtChatInput.Name = "txtChatInput";
-            txtChatInput.Size = new Size(196, 23);
+            txtChatInput.Size = new Size(196, 27);
             txtChatInput.TabIndex = 0;
             // 
             // btnEnviar
@@ -174,9 +163,9 @@ namespace LoteriaMexicana.UI.UserControls
             btnEnviar.FlatStyle = FlatStyle.Flat;
             btnEnviar.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnEnviar.ForeColor = Color.White;
-            btnEnviar.Location = new Point(200, 4);
+            btnEnviar.Location = new Point(258, 3);
             btnEnviar.Name = "btnEnviar";
-            btnEnviar.Size = new Size(55, 26);
+            btnEnviar.Size = new Size(60, 26);
             btnEnviar.TabIndex = 1;
             btnEnviar.Text = "Enviar";
             btnEnviar.UseVisualStyleBackColor = false;
@@ -192,7 +181,7 @@ namespace LoteriaMexicana.UI.UserControls
             grpScorecard.Location = new Point(10, 601);
             grpScorecard.Name = "grpScorecard";
             grpScorecard.Padding = new Padding(6, 4, 6, 4);
-            grpScorecard.Size = new Size(290, 102);
+            grpScorecard.Size = new Size(329, 102);
             grpScorecard.TabIndex = 2;
             grpScorecard.TabStop = false;
             grpScorecard.Text = " Historial de ganadores ";
@@ -204,11 +193,11 @@ namespace LoteriaMexicana.UI.UserControls
             listScorecard.Dock = DockStyle.Fill;
             listScorecard.Font = new Font("Segoe UI", 8.5F);
             listScorecard.ForeColor = Color.FromArgb(210, 210, 215);
-            listScorecard.ItemHeight = 13;
-            listScorecard.Location = new Point(6, 20);
+            listScorecard.ItemHeight = 19;
+            listScorecard.Location = new Point(6, 23);
             listScorecard.Name = "listScorecard";
             listScorecard.SelectionMode = SelectionMode.None;
-            listScorecard.Size = new Size(278, 78);
+            listScorecard.Size = new Size(317, 75);
             listScorecard.TabIndex = 0;
             // 
             // grpJugadores
@@ -218,10 +207,10 @@ namespace LoteriaMexicana.UI.UserControls
             grpJugadores.Dock = DockStyle.Top;
             grpJugadores.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             grpJugadores.ForeColor = Color.FromArgb(100, 180, 230);
-            grpJugadores.Location = new Point(10, 499);
+            grpJugadores.Location = new Point(10, 505);
             grpJugadores.Name = "grpJugadores";
             grpJugadores.Padding = new Padding(6, 4, 6, 4);
-            grpJugadores.Size = new Size(290, 102);
+            grpJugadores.Size = new Size(329, 96);
             grpJugadores.TabIndex = 3;
             grpJugadores.TabStop = false;
             grpJugadores.Text = " Jugadores en sala ";
@@ -233,11 +222,11 @@ namespace LoteriaMexicana.UI.UserControls
             listJugadores.Dock = DockStyle.Fill;
             listJugadores.Font = new Font("Segoe UI", 8.5F);
             listJugadores.ForeColor = Color.FromArgb(210, 210, 215);
-            listJugadores.ItemHeight = 13;
-            listJugadores.Location = new Point(6, 20);
+            listJugadores.ItemHeight = 19;
+            listJugadores.Location = new Point(6, 23);
             listJugadores.Name = "listJugadores";
             listJugadores.SelectionMode = SelectionMode.None;
-            listJugadores.Size = new Size(278, 78);
+            listJugadores.Size = new Size(317, 69);
             listJugadores.TabIndex = 0;
             // 
             // grpReglas
@@ -251,10 +240,10 @@ namespace LoteriaMexicana.UI.UserControls
             grpReglas.Dock = DockStyle.Top;
             grpReglas.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             grpReglas.ForeColor = Color.FromArgb(180, 140, 30);
-            grpReglas.Location = new Point(10, 381);
+            grpReglas.Location = new Point(10, 387);
             grpReglas.Name = "grpReglas";
             grpReglas.Padding = new Padding(8, 4, 8, 4);
-            grpReglas.Size = new Size(290, 118);
+            grpReglas.Size = new Size(329, 118);
             grpReglas.TabIndex = 4;
             grpReglas.TabStop = false;
             grpReglas.Text = " Formas de ganar ";
@@ -267,7 +256,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnNuevaFigura.FlatStyle = FlatStyle.Flat;
             btnNuevaFigura.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnNuevaFigura.ForeColor = Color.White;
-            btnNuevaFigura.Location = new Point(212, 66);
+            btnNuevaFigura.Location = new Point(262, 69);
             btnNuevaFigura.Name = "btnNuevaFigura";
             btnNuevaFigura.Size = new Size(56, 42);
             btnNuevaFigura.TabIndex = 5;
@@ -283,9 +272,9 @@ namespace LoteriaMexicana.UI.UserControls
             btnCargarFiguras.FlatStyle = FlatStyle.Flat;
             btnCargarFiguras.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnCargarFiguras.ForeColor = Color.White;
-            btnCargarFiguras.Location = new Point(150, 66);
+            btnCargarFiguras.Location = new Point(178, 69);
             btnCargarFiguras.Name = "btnCargarFiguras";
-            btnCargarFiguras.Size = new Size(56, 42);
+            btnCargarFiguras.Size = new Size(67, 42);
             btnCargarFiguras.TabIndex = 4;
             btnCargarFiguras.Text = "Cargar";
             btnCargarFiguras.UseVisualStyleBackColor = false;
@@ -295,9 +284,9 @@ namespace LoteriaMexicana.UI.UserControls
             clbFiguras.BackColor = Color.FromArgb(32, 32, 36);
             clbFiguras.ForeColor = SystemColors.Info;
             clbFiguras.FormattingEnabled = true;
-            clbFiguras.Location = new Point(11, 21);
+            clbFiguras.Location = new Point(0, 26);
             clbFiguras.Name = "clbFiguras";
-            clbFiguras.Size = new Size(133, 76);
+            clbFiguras.Size = new Size(172, 88);
             clbFiguras.TabIndex = 3;
             // 
             // chkCartasDobles
@@ -305,9 +294,9 @@ namespace LoteriaMexicana.UI.UserControls
             chkCartasDobles.AutoSize = true;
             chkCartasDobles.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             chkCartasDobles.ForeColor = Color.FromArgb(220, 100, 100);
-            chkCartasDobles.Location = new Point(150, 43);
+            chkCartasDobles.Location = new Point(178, 43);
             chkCartasDobles.Name = "chkCartasDobles";
-            chkCartasDobles.Size = new Size(110, 17);
+            chkCartasDobles.Size = new Size(140, 23);
             chkCartasDobles.TabIndex = 1;
             chkCartasDobles.Text = "⭐ Cartas Dobles";
             chkCartasDobles.UseVisualStyleBackColor = true;
@@ -317,9 +306,9 @@ namespace LoteriaMexicana.UI.UserControls
             chkTablaLlena.AutoSize = true;
             chkTablaLlena.Font = new Font("Segoe UI", 8F);
             chkTablaLlena.ForeColor = Color.FromArgb(200, 200, 205);
-            chkTablaLlena.Location = new Point(150, 20);
+            chkTablaLlena.Location = new Point(178, 14);
             chkTablaLlena.Name = "chkTablaLlena";
-            chkTablaLlena.Size = new Size(81, 17);
+            chkTablaLlena.Size = new Size(93, 23);
             chkTablaLlena.TabIndex = 2;
             chkTablaLlena.Text = "Tabla llena";
             chkTablaLlena.UseVisualStyleBackColor = true;
@@ -327,15 +316,26 @@ namespace LoteriaMexicana.UI.UserControls
             // panelAdminControles
             // 
             panelAdminControles.BackColor = Color.FromArgb(26, 26, 30);
+            panelAdminControles.Controls.Add(lblVelocidadActual);
             panelAdminControles.Controls.Add(btnDisminuirVelocidad);
             panelAdminControles.Controls.Add(btnAumentarVelocidad);
             panelAdminControles.Controls.Add(btnPausarTimer);
             panelAdminControles.Dock = DockStyle.Top;
-            panelAdminControles.Location = new Point(10, 345);
+            panelAdminControles.Location = new Point(10, 351);
             panelAdminControles.Name = "panelAdminControles";
-            panelAdminControles.Size = new Size(290, 36);
+            panelAdminControles.Size = new Size(329, 36);
             panelAdminControles.TabIndex = 5;
             panelAdminControles.Visible = false;
+            // 
+            // lblVelocidadActual
+            // 
+            lblVelocidadActual.Font = new Font("Segoe UI", 7.5F);
+            lblVelocidadActual.ForeColor = Color.FromArgb(150, 150, 155);
+            lblVelocidadActual.Location = new Point(135, 12);
+            lblVelocidadActual.Name = "lblVelocidadActual";
+            lblVelocidadActual.Size = new Size(82, 14);
+            lblVelocidadActual.TabIndex = 0;
+            lblVelocidadActual.Text = "Vel: 5s";
             // 
             // btnDisminuirVelocidad
             // 
@@ -345,11 +345,11 @@ namespace LoteriaMexicana.UI.UserControls
             btnDisminuirVelocidad.FlatStyle = FlatStyle.Flat;
             btnDisminuirVelocidad.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnDisminuirVelocidad.ForeColor = Color.White;
-            btnDisminuirVelocidad.Location = new Point(196, 4);
+            btnDisminuirVelocidad.Location = new Point(287, 4);
             btnDisminuirVelocidad.Name = "btnDisminuirVelocidad";
-            btnDisminuirVelocidad.Size = new Size(90, 28);
+            btnDisminuirVelocidad.Size = new Size(36, 28);
             btnDisminuirVelocidad.TabIndex = 3;
-            btnDisminuirVelocidad.Text = "Más lento";
+            btnDisminuirVelocidad.Text = "-";
             btnDisminuirVelocidad.UseVisualStyleBackColor = false;
             btnDisminuirVelocidad.Click += btnDisminuirVelocidad_Click;
             // 
@@ -361,11 +361,11 @@ namespace LoteriaMexicana.UI.UserControls
             btnAumentarVelocidad.FlatStyle = FlatStyle.Flat;
             btnAumentarVelocidad.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnAumentarVelocidad.ForeColor = Color.White;
-            btnAumentarVelocidad.Location = new Point(101, 4);
+            btnAumentarVelocidad.Location = new Point(223, 3);
             btnAumentarVelocidad.Name = "btnAumentarVelocidad";
-            btnAumentarVelocidad.Size = new Size(90, 28);
+            btnAumentarVelocidad.Size = new Size(41, 28);
             btnAumentarVelocidad.TabIndex = 1;
-            btnAumentarVelocidad.Text = "⚡ Más rápido";
+            btnAumentarVelocidad.Text = "+";
             btnAumentarVelocidad.UseVisualStyleBackColor = false;
             // 
             // btnPausarTimer
@@ -378,7 +378,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnPausarTimer.ForeColor = Color.White;
             btnPausarTimer.Location = new Point(0, 4);
             btnPausarTimer.Name = "btnPausarTimer";
-            btnPausarTimer.Size = new Size(96, 28);
+            btnPausarTimer.Size = new Size(129, 28);
             btnPausarTimer.TabIndex = 2;
             btnPausarTimer.Text = "⏸ Pausar";
             btnPausarTimer.UseVisualStyleBackColor = false;
@@ -393,7 +393,7 @@ namespace LoteriaMexicana.UI.UserControls
             chkAutoCantar.ForeColor = Color.FromArgb(160, 160, 165);
             chkAutoCantar.Location = new Point(10, 328);
             chkAutoCantar.Name = "chkAutoCantar";
-            chkAutoCantar.Size = new Size(290, 17);
+            chkAutoCantar.Size = new Size(329, 23);
             chkAutoCantar.TabIndex = 6;
             chkAutoCantar.Text = "Automático";
             chkAutoCantar.UseVisualStyleBackColor = false;
@@ -410,7 +410,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnGritarLoteria.ForeColor = Color.White;
             btnGritarLoteria.Location = new Point(10, 280);
             btnGritarLoteria.Name = "btnGritarLoteria";
-            btnGritarLoteria.Size = new Size(290, 48);
+            btnGritarLoteria.Size = new Size(329, 48);
             btnGritarLoteria.TabIndex = 7;
             btnGritarLoteria.Text = "¡ L O T E R Í A !";
             btnGritarLoteria.UseVisualStyleBackColor = false;
@@ -422,7 +422,7 @@ namespace LoteriaMexicana.UI.UserControls
             picCartaActual.Dock = DockStyle.Top;
             picCartaActual.Location = new Point(10, 62);
             picCartaActual.Name = "picCartaActual";
-            picCartaActual.Size = new Size(290, 218);
+            picCartaActual.Size = new Size(329, 218);
             picCartaActual.SizeMode = PictureBoxSizeMode.Zoom;
             picCartaActual.TabIndex = 8;
             picCartaActual.TabStop = false;
@@ -436,7 +436,7 @@ namespace LoteriaMexicana.UI.UserControls
             panelConexion.Dock = DockStyle.Top;
             panelConexion.Location = new Point(10, 28);
             panelConexion.Name = "panelConexion";
-            panelConexion.Size = new Size(290, 34);
+            panelConexion.Size = new Size(329, 34);
             panelConexion.TabIndex = 9;
             // 
             // txtSala
@@ -447,7 +447,7 @@ namespace LoteriaMexicana.UI.UserControls
             txtSala.ForeColor = Color.White;
             txtSala.Location = new Point(0, 4);
             txtSala.Name = "txtSala";
-            txtSala.Size = new Size(76, 23);
+            txtSala.Size = new Size(114, 27);
             txtSala.TabIndex = 0;
             // 
             // btnAccionRed
@@ -458,9 +458,9 @@ namespace LoteriaMexicana.UI.UserControls
             btnAccionRed.FlatStyle = FlatStyle.Flat;
             btnAccionRed.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnAccionRed.ForeColor = Color.White;
-            btnAccionRed.Location = new Point(80, 4);
+            btnAccionRed.Location = new Point(158, 0);
             btnAccionRed.Name = "btnAccionRed";
-            btnAccionRed.Size = new Size(93, 24);
+            btnAccionRed.Size = new Size(86, 24);
             btnAccionRed.TabIndex = 1;
             btnAccionRed.Text = "Crear";
             btnAccionRed.UseVisualStyleBackColor = false;
@@ -474,7 +474,7 @@ namespace LoteriaMexicana.UI.UserControls
             btnSalir.FlatStyle = FlatStyle.Flat;
             btnSalir.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             btnSalir.ForeColor = Color.White;
-            btnSalir.Location = new Point(200, 4);
+            btnSalir.Location = new Point(262, 3);
             btnSalir.Name = "btnSalir";
             btnSalir.Size = new Size(56, 24);
             btnSalir.TabIndex = 2;
@@ -490,7 +490,7 @@ namespace LoteriaMexicana.UI.UserControls
             lblEstado.ForeColor = Color.FromArgb(200, 200, 205);
             lblEstado.Location = new Point(10, 6);
             lblEstado.Name = "lblEstado";
-            lblEstado.Size = new Size(290, 22);
+            lblEstado.Size = new Size(329, 22);
             lblEstado.TabIndex = 6;
             lblEstado.Text = "Sin conexion";
             lblEstado.TextAlign = ContentAlignment.MiddleLeft;
@@ -500,10 +500,10 @@ namespace LoteriaMexicana.UI.UserControls
             panelTablas.AutoScroll = true;
             panelTablas.BackColor = Color.FromArgb(28, 28, 32);
             panelTablas.Dock = DockStyle.Fill;
-            panelTablas.Location = new Point(310, 0);
+            panelTablas.Location = new Point(349, 0);
             panelTablas.Name = "panelTablas";
             panelTablas.Padding = new Padding(20, 16, 20, 16);
-            panelTablas.Size = new Size(1610, 1042);
+            panelTablas.Size = new Size(1571, 1042);
             panelTablas.TabIndex = 0;
             // 
             // panelHistorialCartas
@@ -512,10 +512,10 @@ namespace LoteriaMexicana.UI.UserControls
             panelHistorialCartas.BackColor = Color.FromArgb(20, 20, 22);
             panelHistorialCartas.Controls.Add(lblHistorialTitulo);
             panelHistorialCartas.Dock = DockStyle.Bottom;
-            panelHistorialCartas.Location = new Point(310, 1042);
+            panelHistorialCartas.Location = new Point(349, 1042);
             panelHistorialCartas.Name = "panelHistorialCartas";
             panelHistorialCartas.Padding = new Padding(8, 26, 8, 4);
-            panelHistorialCartas.Size = new Size(1610, 38);
+            panelHistorialCartas.Size = new Size(1571, 38);
             panelHistorialCartas.TabIndex = 1;
             panelHistorialCartas.WrapContents = false;
             panelHistorialCartas.MouseEnter += PanelHistorial_MouseEnter;
@@ -529,7 +529,7 @@ namespace LoteriaMexicana.UI.UserControls
             lblHistorialTitulo.ForeColor = Color.FromArgb(180, 140, 30);
             lblHistorialTitulo.Location = new Point(11, 26);
             lblHistorialTitulo.Name = "lblHistorialTitulo";
-            lblHistorialTitulo.Size = new Size(184, 13);
+            lblHistorialTitulo.Size = new Size(242, 19);
             lblHistorialTitulo.TabIndex = 0;
             lblHistorialTitulo.Text = "Historial de cartas  (pasa el cursor)";
             // 
@@ -576,7 +576,7 @@ namespace LoteriaMexicana.UI.UserControls
         }
         internal Button btnDisminuirVelocidad;
         private CheckedListBox clbFiguras;
-        internal Button btnCargarFiguras;
         internal Button btnNuevaFigura;
+        internal Button btnCargarFiguras;
     }
 }

@@ -61,7 +61,7 @@ namespace LoteriaMexicana.Network
                 using var reader = new StreamReader(_cliente.GetStream());
                 while (_conectado)
                 {
-                    string linea = reader.ReadLine(); //SLRRL
+                    string linea = reader.ReadLine(); //SLRRL //Te extrañaré excepcion de desconexión abrupta, te haré un corrido tumbado en tu honor :c
                     if (linea == null) break;
 
                     if (linea == "CONNECT_OK")
