@@ -17,6 +17,7 @@ namespace LoteriaMexicana.Network
         public event Action<string> OnError;
         public event Action<string> OnConectadoRechazado;
         public event Action OnConectadoOk;
+        private CancellationTokenSource _cts;
 
         public void Conectar(string ip, string nombre)
         {
@@ -26,6 +27,7 @@ namespace LoteriaMexicana.Network
             _cliente.Connect(ip, PUERTO);
             _writer    = new StreamWriter(_cliente.GetStream()) { AutoFlush = true };
             _conectado = true;
+            _cts = new CancellationTokenSource();
             _writer.WriteLine($"CONNECT|{nombre}");
 
             Task.Run(() => BucleEscucha());
@@ -47,6 +49,7 @@ namespace LoteriaMexicana.Network
         public void Desconectar()
         {
             _conectado = false;
+            _cts?.Cancel();
             _writer?.Close();
             _cliente?.Close();
         }
@@ -78,8 +81,13 @@ namespace LoteriaMexicana.Network
                     }
                 }
             }
-            catch (Exception ex) when (_conectado)
+            catch (OperationCanceledException)
             {
+                // desconexión solicitada: no lo consideramos error
+            }
+            catch (IOException ex)
+            {
+                // socket abortado por el peer: tratar como desconexión normal o notificar mínimamente
                 OnError?.Invoke($"[Cliente] Error de escucha: {ex.Message}");
             }
             finally

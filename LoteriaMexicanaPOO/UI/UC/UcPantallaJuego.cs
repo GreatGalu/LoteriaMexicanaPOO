@@ -1,12 +1,14 @@
+using LoteriaMexicana.Controllers;
+using LoteriaMexicana.Core;
+using LoteriaMexicana.Logic;
+using LoteriaMexicana.Models;
+using LoteriaMexicana.Network;
+using LoteriaMexicanaPOO.UI.UC;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using LoteriaMexicana.Controllers;
-using LoteriaMexicana.Core;
-using LoteriaMexicana.Logic;
-using LoteriaMexicana.Network;
 
 namespace LoteriaMexicana.UI.UserControls
 {
@@ -14,38 +16,51 @@ namespace LoteriaMexicana.UI.UserControls
     {
         public event Action OnSolicitarSalida;
         public event Action<string, string> OnPartidaTerminada;
+        public event Action OnCrearFiguraSolicitado;
         public event Action<string, string, List<int>, List<int>> OnEmpateDetectado;
         public event Action OnNuevaPartidaRecibida;
-        private ClienteLoteria   _cliente;
-        private ServidorLoteria  _servidor;
-        private Mazo             _mazo;
+        private ClienteLoteria _cliente;
+        private ServidorLoteria _servidor;
+        private Mazo _mazo;
         private System.Windows.Forms.Timer _timerCantor;
         private readonly GestorVoz _voz = new GestorVoz();
         private readonly List<Tablero> _tableros = new List<Tablero>();
         private readonly List<ControladorTablero> _ctrlTablas = new List<ControladorTablero>();
         private string _nombre = "Jugador";
-        private bool   _esAnfitrion = false;
-        private bool   _partidaTerminada = false;
-        private bool   _descalificado = false;
+        private bool _esAnfitrion = false;
+        private bool _partidaTerminada = false;
+        private bool _descalificado = false;
         private List<string> _jugadoresEnDesempate = null;
         private int _advertenciasLoteria = 0;
         private const int MAX_ADVERTENCIAS = 3;
-        private int    _rondaActual = 0;
-        private int    _intervaloTimer = 5_000; // ms
-        private bool   _timerPausado = false;
-        private int?   _cartaDobleActual = null;
+        private int _rondaActual = 0;
+        private int _intervaloTimer = 5_000; // ms
+        private bool _timerPausado = false;
+        private bool _cartaDobleActiva = false;
         private readonly Dictionary<int, string> _nombresCartas = new Dictionary<int, string>();
+        private readonly GestorFiguras _gestorFiguras = new GestorFiguras();
+        private const int MIN_INTERVAL = 1_000;
+        private const int MAX_INTERVAL = 5_000;
+
         public UcPantallaJuego()
         {
             InitializeComponent();
             PrecargarNombresCartas();
-            btnPausarTimer.Click       += btnPausarTimer_Click;
+            btnPausarTimer.Click += btnPausarTimer_Click;
             btnAumentarVelocidad.Click += btnAumentarVelocidad_Click;
-            chkHorizontal.CheckedChanged += (s, e) => EnviarReglas();
-            chkVertical.CheckedChanged   += (s, e) => EnviarReglas();
-            chkDiagonal.CheckedChanged   += (s, e) => EnviarReglas();
-            chkEsquinas.CheckedChanged   += (s, e) => EnviarReglas();
-            chkPoyaCruz.CheckedChanged   += (s, e) => EnviarReglas();
+            btnCargarFiguras.Click += BtnCargarFiguras_Click;
+
+            PoblarCheckListFiguras();
+
+            chkTablaLlena.CheckedChanged += (s, e) =>
+            {
+                clbFiguras.Enabled = !chkTablaLlena.Checked;
+                if (_esAnfitrion) EnviarReglas();
+            };
+            clbFiguras.ItemCheck += (s, e) =>
+            {
+                if (_esAnfitrion) BeginInvoke(new Action(EnviarReglas));
+            };
 
             chkAutoCantar.CheckedChanged += (s, e) =>
             {
@@ -71,8 +86,8 @@ namespace LoteriaMexicana.UI.UserControls
         public void AsignarCliente(ClienteLoteria cliente)
         {
             _cliente = cliente;
-            _cliente.OnMensajeRecibido  += ProcesarMensaje;
-            _cliente.OnConectadoOk      += () => MostrarEnHistorial("[Sistema] Conectado correctamente.");
+            _cliente.OnMensajeRecibido += ProcesarMensaje;
+            _cliente.OnConectadoOk += () => MostrarEnHistorial("[Sistema] Conectado correctamente.");
             _cliente.OnConectadoRechazado += motivo =>
             {
                 if (IsDisposed) return;
@@ -92,46 +107,41 @@ namespace LoteriaMexicana.UI.UserControls
 
         public void AsignarServidor(ServidorLoteria servidor, Mazo mazo)
         {
-            _servidor    = servidor;
-            _mazo        = mazo;
+            _servidor = servidor;
+            _mazo = mazo;
             _esAnfitrion = true;
 
-            btnAccionRed.Text    = "Iniciar";
+            btnAccionRed.Text = "Iniciar";
             btnAccionRed.Enabled = true;
-            btnAccionRed.Click  -= btnAccionRed_ClickCrear;
-            btnAccionRed.Click  += BtnIniciar_Click;
+            btnAccionRed.Click -= btnAccionRed_ClickCrear;
+            btnAccionRed.Click += BtnIniciar_Click;
 
-            chkAutoCantar.Visible       = true;
+            chkAutoCantar.Visible = true;
             panelAdminControles.Visible = true;
             HabilitarControlesReglas(true);
         }
-        public int? ObtenerCartaDobleSiAplica()
-        {
-            if (chkCartasDobles.Checked) return new Random().Next(1, 55);
-            return null;
-        }
+        public bool CartaDobleActiva() => chkCartasDobles.Checked;
 
         private void BtnIniciar_Click(object sender, EventArgs e)
         {
-            btnAccionRed.Text    = "Siguiente ▶";
-            btnAccionRed.Click  -= BtnIniciar_Click;
-            btnAccionRed.Click  += (s, ev) => CantarSiguienteCarta();
-            
+            if (!chkTablaLlena.Checked && clbFiguras.CheckedItems.Count == 0)
+            {
+                MessageBox.Show("Debes seleccionar al menos una forma de ganar antes de iniciar.",
+                    "Sin condiciones activas", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            btnAccionRed.Text = "Siguiente ▶";
+            btnAccionRed.Click -= BtnIniciar_Click;
+            btnAccionRed.Click += (s, ev) => CantarSiguienteCarta();
+
             if (_esAnfitrion)
             {
-                int? idDoble = ObtenerCartaDobleSiAplica();
-                if (idDoble.HasValue)
-                {
-                    _servidor.Transmitir($"MODO_DOBLE|{idDoble.Value}");
-                }
-                else
-                {
-                    _servidor.Transmitir($"MODO_DOBLE|0");
-                }
-                _cartaDobleActual = idDoble;
-                _mazo.Reiniciar(idDoble);
+                _cartaDobleActiva = chkCartasDobles.Checked;
+                _servidor.Transmitir(_cartaDobleActiva ? "MODO_DOBLE|1" : "MODO_DOBLE|0");
+                _mazo.Reiniciar();
                 _mazo.Barajar();
-                foreach (var t in _tableros) t.GenerarAleatorio(idDoble);
+                foreach (var t in _tableros) t.GenerarAleatorio(_cartaDobleActiva);
                 ConstruirTablas();
             }
 
@@ -142,27 +152,27 @@ namespace LoteriaMexicana.UI.UserControls
         public void MostrarCodigoSala(string codigo)
         {
             lblEstado.Text = $"SALA: {codigo}  |  Esperando jugadores...";
-            txtSala.Text   = codigo;
+            txtSala.Text = codigo;
             btnAccionRed.Text = "Siguiente";
         }
 
         public void MostrarConectado(string sala)
         {
-            lblEstado.Text      = $"Conectado a la sala: {sala}";
+            lblEstado.Text = $"Conectado a la sala: {sala}";
             btnAccionRed.Enabled = false;
             HabilitarControlesReglas(false);
         }
         public void ReiniciarPartida(Mazo mazoNuevo)
         {
-            _mazo            = mazoNuevo;
+            _mazo = mazoNuevo;
             _partidaTerminada = false;
-            _descalificado   = false;
-            _intervaloTimer  = 5_000;
-            _timerPausado    = false;
+            _descalificado = false;
+            _intervaloTimer = 5_000;
+            _timerPausado = false;
             _advertenciasLoteria = 0;
             btnGritarLoteria.Enabled = true;
-            btnEnviar.Enabled        = true;
-            txtChatInput.Enabled     = true;
+            btnEnviar.Enabled = true;
+            txtChatInput.Enabled = true;
             _jugadoresEnDesempate = null;
             var miniaturas = new List<PictureBox>();
             foreach (Control c in panelHistorialCartas.Controls)
@@ -184,11 +194,11 @@ namespace LoteriaMexicana.UI.UserControls
 
             if (_esAnfitrion)
             {
-                btnAccionRed.Text    = "Iniciar";
+                btnAccionRed.Text = "Iniciar";
                 btnAccionRed.Enabled = true;
-                btnAccionRed.Click  -= BtnIniciar_Click;
-                btnAccionRed.Click  -= btnAccionRed_ClickCrear;
-                btnAccionRed.Click  += BtnIniciar_Click;
+                btnAccionRed.Click -= BtnIniciar_Click;
+                btnAccionRed.Click -= btnAccionRed_ClickCrear;
+                btnAccionRed.Click += BtnIniciar_Click;
                 chkAutoCantar.Checked = false;
                 _timerCantor?.Stop();
                 ActualizarLabelVelocidad();
@@ -209,9 +219,10 @@ namespace LoteriaMexicana.UI.UserControls
             if (_partidaTerminada || _descalificado || _cliente == null) return;
             btnGritarLoteria.Enabled = false;
 
+            var validador = ConstruirValidador();
             for (int i = 0; i < _tableros.Count; i++)
             {
-                var detalle = ValidadorVictoria.EvaluarConValidacion(
+                var detalle = validador.EvaluarConValidacion(
                     _tableros[i].Tapas,
                     _tableros[i].Casillas,
                     _tableros[i].CartasCantadas);
@@ -267,8 +278,8 @@ namespace LoteriaMexicana.UI.UserControls
         private void Descalificar(string motivo)
         {
             _descalificado = true;
-            btnGritarLoteria.Enabled  = false;
-            btnGritarLoteria.Text     = "❌ DESCALIFICADO";
+            btnGritarLoteria.Enabled = false;
+            btnGritarLoteria.Text = "❌ DESCALIFICADO";
             btnGritarLoteria.BackColor = Color.FromArgb(80, 30, 30);
             MessageBox.Show($"¡Has sido descalificado!\n\n{motivo}\n\nPuedes seguir mirando la partida.",
                 "Descalificado", MessageBoxButtons.OK, MessageBoxIcon.Stop);
@@ -305,7 +316,7 @@ namespace LoteriaMexicana.UI.UserControls
             {
                 _timerCantor?.Start();
                 _timerPausado = false;
-                btnPausarTimer.Text      = "⏸ Pausar";
+                btnPausarTimer.Text = "⏸ Pausar";
                 btnPausarTimer.BackColor = Color.FromArgb(55, 85, 130);
                 MostrarEnHistorial("[Admin] Gritón reanudado.");
             }
@@ -313,17 +324,34 @@ namespace LoteriaMexicana.UI.UserControls
             {
                 _timerCantor?.Stop();
                 _timerPausado = true;
-                btnPausarTimer.Text      = "▶ Reanudar";
+                btnPausarTimer.Text = "▶ Reanudar";
                 btnPausarTimer.BackColor = Color.FromArgb(40, 120, 60);
                 MostrarEnHistorial("[Admin] Gritón pausado.");
             }
         }
 
+        private void btnDisminuirVelocidad_Click(object sender, EventArgs e)
+        {
+            if (!_esAnfitrion) return;
+            int nuevo = Math.Min(MAX_INTERVAL, _intervaloTimer + 1_000);
+            if (nuevo == _intervaloTimer) return;
+            _intervaloTimer = nuevo;
+            ActualizarLabelVelocidad();
+            if (_timerCantor != null && !_timerPausado)
+            {
+                _timerCantor.Stop();
+                _timerCantor.Interval = _intervaloTimer;
+                _timerCantor.Start();
+            }
+            MostrarEnHistorial($"[Admin] Velocidad ajustada: {_intervaloTimer / 1000}s entre cartas.");
+        }
+
         private void btnAumentarVelocidad_Click(object sender, EventArgs e)
         {
             if (!_esAnfitrion) return;
-            _intervaloTimer -= 1_000;
-            if (_intervaloTimer < 1_000) _intervaloTimer = 5_000;
+            int nuevo = Math.Max(MIN_INTERVAL, _intervaloTimer - 1_000);
+            if (nuevo == _intervaloTimer) return;
+            _intervaloTimer = nuevo;
             ActualizarLabelVelocidad();
             if (_timerCantor != null && !_timerPausado)
             {
@@ -336,48 +364,83 @@ namespace LoteriaMexicana.UI.UserControls
 
         private void ActualizarLabelVelocidad() =>
             lblVelocidadActual.Text = $"Vel: {_intervaloTimer / 1000}s";
+        private void PoblarCheckListFiguras()
+        {
+            clbFiguras.Items.Clear();
+            foreach (var figura in _gestorFiguras.Todas)
+                clbFiguras.Items.Add(figura.Nombre, false);
+        }
+
+        private void BtnCargarFiguras_Click(object sender, EventArgs e)
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "Archivos JSON (*.json)|*.json",
+                Title = "Cargar figuras",
+                Multiselect = true
+            };
+            if (dialog.ShowDialog() != DialogResult.OK) return;
+            foreach (var archivo in dialog.FileNames)
+                _gestorFiguras.CargarDesdeArchivo(archivo);
+            PoblarCheckListFiguras();
+            if (_esAnfitrion) EnviarReglas();
+        }
+
         private void EnviarReglas()
         {
             if (!_esAnfitrion || _cliente == null) return;
-            string msg = $"REGLAS|{B(chkHorizontal.Checked)}|{B(chkVertical.Checked)}" +
-                         $"|{B(chkDiagonal.Checked)}|{B(chkEsquinas.Checked)}|{B(chkPoyaCruz.Checked)}";
-            _cliente.Enviar(msg);
+            if (chkTablaLlena.Checked)
+            {
+                _cliente.Enviar("REGLAS|__TABLA_LLENA__");
+                return;
+            }
+            var nombresActivos = clbFiguras.CheckedItems.Cast<string>().ToList();
+            _cliente.Enviar("REGLAS|" + string.Join(",", nombresActivos));
         }
-
-        private static string B(bool v) => v ? "1" : "0";
 
         private void AplicarReglas(string[] p)
         {
-            if (p.Length < 6) return;
-            ValidadorVictoria.ReglaHorizontal = p[1] == "1";
-            ValidadorVictoria.ReglaVertical   = p[2] == "1";
-            ValidadorVictoria.ReglaDiagonal   = p[3] == "1";
-            ValidadorVictoria.ReglaEsquinas   = p[4] == "1";
-            ValidadorVictoria.ReglaPoyaCruz   = p[5] == "1";
-
+            if (p.Length < 2) return;
             HabilitarControlesReglas(false);
-            chkHorizontal.CheckedChanged -= (s, e) => EnviarReglas();
-            chkVertical.CheckedChanged   -= (s, e) => EnviarReglas();
-            chkDiagonal.CheckedChanged   -= (s, e) => EnviarReglas();
-            chkEsquinas.CheckedChanged   -= (s, e) => EnviarReglas();
-            chkPoyaCruz.CheckedChanged   -= (s, e) => EnviarReglas();
 
-            chkHorizontal.Checked = ValidadorVictoria.ReglaHorizontal;
-            chkVertical.Checked   = ValidadorVictoria.ReglaVertical;
-            chkDiagonal.Checked   = ValidadorVictoria.ReglaDiagonal;
-            chkEsquinas.Checked   = ValidadorVictoria.ReglaEsquinas;
-            chkPoyaCruz.Checked   = ValidadorVictoria.ReglaPoyaCruz;
+            if (p[1] == "__TABLA_LLENA__")
+            {
+                chkTablaLlena.Checked = true;
+                clbFiguras.Enabled = false;
+                return;
+            }
+
+            chkTablaLlena.Checked = false;
+            clbFiguras.Enabled = !_esAnfitrion ? false : true;
+
+            var nombresActivos = new HashSet<string>(
+                p[1].Split(','), StringComparer.OrdinalIgnoreCase);
+
+            //for (int i = 0; i < clbFiguras.Items.Count; i++)
+              //  clbFiguras.SetItemChecked(i, nombresActivos.Contains(clbFiguras.Items[i].ToString()));
 
             if (_esAnfitrion) HabilitarControlesReglas(true);
         }
 
         private void HabilitarControlesReglas(bool habilitado)
         {
-            chkHorizontal.Enabled = habilitado;
-            chkVertical.Enabled   = habilitado;
-            chkDiagonal.Enabled   = habilitado;
-            chkEsquinas.Enabled   = habilitado;
-            chkPoyaCruz.Enabled   = habilitado;
+            clbFiguras.Enabled = habilitado && !chkTablaLlena.Checked;
+            chkTablaLlena.Enabled = habilitado;
+            btnCargarFiguras.Enabled = habilitado;
+        }
+
+        private ValidadorVictoria ConstruirValidador()
+        {
+            if (chkTablaLlena.Checked)
+                return new ValidadorVictoria(new List<FiguraGanar>(), tablaLlena: true);
+
+            var activas = clbFiguras.CheckedItems
+                .Cast<string>()
+                .Select(nombre => _gestorFiguras.Todas.FirstOrDefault(f => f.Nombre == nombre))
+                .Where(f => f != null)
+                .ToList();
+
+            return new ValidadorVictoria(activas);
         }
         private void ProcesarMensaje(string mensaje)
         {
@@ -392,29 +455,35 @@ namespace LoteriaMexicana.UI.UserControls
             string[] p = mensaje.Split('|');
             switch (p[0])
             {
-                case "MODO_DOBLE":    ProcesarModoDoble(p);      break;
-                case "CARTA":         ProcesarCarta(p);         break;
-                case "CHAT":          ProcesarChat(p);           break;
-                case "GANADOR":       ProcesarGanador(p);        break;
-                case "NUEVA_PARTIDA": ProcesarNuevaPartida();    break;
-                case "REGLAS":        AplicarReglas(p);          break;
-                case "JUGADORES":     ProcesarJugadores(p);      break;
-                case "PERDEDOR":      ProcesarPerdedor(p);       break;
-                case "TIE":           ProcesarEmpate(p);         break;
+                case "MODO_DOBLE": ProcesarModoDoble(p); break;
+                case "CARTA": ProcesarCarta(p); break;
+                case "CHAT": ProcesarChat(p); break;
+                case "GANADOR": ProcesarGanador(p); break;
+                case "NUEVA_PARTIDA": ProcesarNuevaPartida(); break;
+                case "REGLAS": AplicarReglas(p); break;
+                case "JUGADORES": ProcesarJugadores(p); break;
+                case "PERDEDOR": ProcesarPerdedor(p); break;
+                case "TIE": ProcesarEmpate(p); break;
                 case "RONDA_DESEMPATE": ProcesarRondaDesempate(p); break;
             }
         }
 
         private void ProcesarModoDoble(string[] p)
         {
-            if (p.Length < 2 || !int.TryParse(p[1], out int id)) return;
-            if (id == 0) _cartaDobleActual = null;
-            else _cartaDobleActual = id;
-            if (_cartaDobleActual.HasValue)
+            if (p.Length < 2) return;
+            _cartaDobleActiva = p[1] == "1";
+
+            if (_cartaDobleActiva)
             {
-                string nombre = _nombresCartas.TryGetValue(_cartaDobleActual.Value, out string n) ? n : $"carta {_cartaDobleActual.Value}";
-                MostrarEnHistorial($"⭐ MODO CARTAS DOBLES ACTIVADO ⭐");
-                MostrarEnHistorial($"Carta duplicada en todos los tableros: {nombre}");
+                MostrarEnHistorial("⭐ MODO CARTAS DOBLES ACTIVADO ⭐");
+                MostrarEnHistorial("Cada tablero tendrá una carta repetida propia.");
+            }
+
+            // Clientes (no anfitrión) regeneran sus tableros al recibir este mensaje
+            if (!_esAnfitrion)
+            {
+                foreach (var t in _tableros) t.GenerarAleatorio(_cartaDobleActiva);
+                ConstruirTablas();
             }
         }
 
@@ -425,7 +494,7 @@ namespace LoteriaMexicana.UI.UserControls
             string nombre = _nombresCartas.TryGetValue(id, out string n) ? n : $"carta {id}";
             _voz.AnunciarCarta(nombre);
 
-            Image imgGrande    = GestorArchivos.CargarImagen(id);
+            Image imgGrande = GestorArchivos.CargarImagen(id);
             Image imgMiniatura = GestorArchivos.CargarImagen(id);
 
             Image anterior = picCartaActual.Image;
@@ -451,7 +520,7 @@ namespace LoteriaMexicana.UI.UserControls
         {
             if (p.Length < 3) return;
             string ganador = p[1];
-            string figura  = p[2];
+            string figura = p[2];
 
             _partidaTerminada = true;
             CongelarJuego();
@@ -474,15 +543,15 @@ namespace LoteriaMexicana.UI.UserControls
         private void ProcesarNuevaPartida()
         {
             MostrarEnHistorial("=== El anfitrión inició una nueva partida ===");
-            _partidaTerminada  = false;
-            _descalificado     = false;
+            _partidaTerminada = false;
+            _descalificado = false;
             _advertenciasLoteria = 0;
-            btnGritarLoteria.Enabled  = true;
-            btnGritarLoteria.Text     = "¡ L O T E R Í A !";
+            btnGritarLoteria.Enabled = true;
+            btnGritarLoteria.Text = "¡ L O T E R Í A !";
             btnGritarLoteria.BackColor = Color.FromArgb(160, 30, 30);
-            btnEnviar.Enabled         = true;
-            txtChatInput.Enabled      = true;
-            foreach (var tablero in _tableros) tablero.GenerarAleatorio(_cartaDobleActual);
+            btnEnviar.Enabled = true;
+            txtChatInput.Enabled = true;
+            foreach (var tablero in _tableros) tablero.GenerarAleatorio(_cartaDobleActiva);
             ConstruirTablas();
             OnNuevaPartidaRecibida?.Invoke();
             _jugadoresEnDesempate = null;
@@ -626,7 +695,7 @@ namespace LoteriaMexicana.UI.UserControls
             panelTablas.Controls.Clear();
             _ctrlTablas.Clear();
 
-            int total = Math.Min(_tableros.Count, 6); 
+            int total = Math.Min(_tableros.Count, 6);
             panelTablas.FlowDirection = FlowDirection.LeftToRight;
             panelTablas.WrapContents = total > 2;
 
@@ -714,8 +783,8 @@ namespace LoteriaMexicana.UI.UserControls
         private void CongelarJuego()
         {
             btnGritarLoteria.Enabled = false;
-            btnEnviar.Enabled        = false;
-            txtChatInput.Enabled     = false;
+            btnEnviar.Enabled = false;
+            txtChatInput.Enabled = false;
             _timerCantor?.Stop();
         }
 
@@ -724,10 +793,10 @@ namespace LoteriaMexicana.UI.UserControls
             if (img == null) return;
             var pic = new PictureBox
             {
-                Size      = new Size(58, 80),
-                SizeMode  = PictureBoxSizeMode.Zoom,
-                Image     = img,
-                Margin    = new Padding(3, 2, 3, 2),
+                Size = new Size(58, 80),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Image = img,
+                Margin = new Padding(3, 2, 3, 2),
                 BorderStyle = BorderStyle.None,
                 BackColor = Color.FromArgb(32, 32, 36)
             };
@@ -755,5 +824,29 @@ namespace LoteriaMexicana.UI.UserControls
             foreach (Control c in panelHistorialCartas.Controls)
                 if (c is PictureBox p) p.Image?.Dispose();
         }
+
+        private void BtnNuevaFigura_Click(object sender, EventArgs e)
+        {
+            OnCrearFiguraSolicitado?.Invoke();
+        }
+
+        public void RecibirFiguraCreada(FiguraGanar figura)
+        {
+            if (figura == null) return;
+            _gestorFiguras.AgregarPersonalizada(figura);
+
+            using var saveDialog = new SaveFileDialog
+            {
+                Filter = "Archivos JSON (*.json)|*.json",
+                Title = "Guardar figura",
+                FileName = figura.Nombre
+            };
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+                _gestorFiguras.GuardarEnArchivo(new List<FiguraGanar> { figura }, saveDialog.FileName);
+
+            PoblarCheckListFiguras();
+            if (_esAnfitrion) EnviarReglas();
+        }
+
     }
 }
