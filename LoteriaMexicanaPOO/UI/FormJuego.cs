@@ -1,11 +1,13 @@
+using LoteriaMexicana.Core;
+using LoteriaMexicana.Logic;
+using LoteriaMexicana.Models;
+using LoteriaMexicana.Network;
+using LoteriaMexicana.UI.UserControls;
+using LoteriaMexicanaPOO.UI.UC;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using LoteriaMexicana.Core;
-using LoteriaMexicana.Logic;
-using LoteriaMexicana.Network;
-using LoteriaMexicana.UI.UserControls;
 
 namespace LoteriaMexicana.UI
 {
@@ -94,6 +96,7 @@ namespace LoteriaMexicana.UI
             uc.Configurar(nombre, tableros);
             uc.OnSolicitarSalida += CerrarLimpio;
             uc.OnPartidaTerminada += MostrarOverlayPostPartida;
+            uc.OnCrearFiguraSolicitado += () => AbrirEditorFigura(uc);
             uc.OnNuevaPartidaRecibida += () =>
             {
                 if (InvokeRequired) { BeginInvoke(new Action(() => QuitarOverlayPostPartida())); return; }
@@ -117,19 +120,12 @@ namespace LoteriaMexicana.UI
             _overlayPostPartida.OnNuevaPartida += () =>
             {
                 QuitarOverlayPostPartida();
-                int? idCartaDoble = _ucJuego.ObtenerCartaDobleSiAplica();
-                
-                if (idCartaDoble.HasValue)
-                {
-                    _servidor?.Transmitir($"MODO_DOBLE|{idCartaDoble.Value}");
-                }
-                else
-                {
-                    _servidor?.Transmitir($"MODO_DOBLE|0");
-                }
+                bool cartaDoble = _ucJuego.CartaDobleActiva();
 
-                if (_mazo != null) { _mazo.Reiniciar(idCartaDoble); _mazo.Barajar(); }
-                foreach (var t in _tablerosActivos) t.GenerarAleatorio(idCartaDoble);
+                _servidor?.Transmitir(cartaDoble ? "MODO_DOBLE|1" : "MODO_DOBLE|0");
+
+                if (_mazo != null) { _mazo.Reiniciar(); _mazo.Barajar(); }
+                foreach (var t in _tablerosActivos) t.GenerarAleatorio(cartaDoble);
                 _ucJuego?.ReiniciarPartida(_mazo);
                 _servidor?.Transmitir("NUEVA_PARTIDA");
             };
@@ -172,7 +168,7 @@ namespace LoteriaMexicana.UI
                     var resp = MessageBox.Show(
                         $"Tabla {i + 1}: ¿Cómo deseas generar esta tabla?\n\nSí = Crear en Editor\nNo = Cargar desde JSON\nCancelar = Aleatoria",
                         $"Tabla {i + 1}", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-                    
+
                     Tablero nuevaTabla = null;
 
                     if (resp == DialogResult.Yes)
@@ -202,7 +198,7 @@ namespace LoteriaMexicana.UI
                     {
                         if (resp == DialogResult.Yes || resp == DialogResult.No)
                         {
-                            MessageBox.Show("Esta tabla es idéntica a una que ya agregaste. Por favor crea/carga una diferente.", 
+                            MessageBox.Show("Esta tabla es idéntica a una que ya agregaste. Por favor crea/carga una diferente.",
                                             "Tabla Duplicada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                     }
@@ -238,10 +234,26 @@ namespace LoteriaMexicana.UI
                 {
                     return t;
                 }
-                MessageBox.Show("El archivo no tiene el formato correcto o no contiene la cantidad de cartas necesaria.", 
+                MessageBox.Show("El archivo no tiene el formato correcto o no contiene la cantidad de cartas necesaria.",
                                 "Error al cargar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             return null;
+        }
+
+        private void AbrirEditorFigura(UcPantallaJuego ucJuego)
+        {
+            bool terminado = false;
+            FiguraGanar resultado = null;
+
+            var ucEditor = new UcCreadorFigura();
+            ucEditor.OnFiguraConfirmada += fig => { resultado = fig; terminado = true; };
+            ucEditor.OnCancelado += () => terminado = true;
+
+            MontarControl(ucEditor);
+            while (!terminado) Application.DoEvents();
+            MontarControl(ucJuego);
+
+            ucJuego.RecibirFiguraCreada(resultado);
         }
 
         private Tablero CrearTableroConEditor(int numero)

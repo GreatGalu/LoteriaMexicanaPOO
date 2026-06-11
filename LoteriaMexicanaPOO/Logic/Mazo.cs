@@ -14,11 +14,11 @@ namespace LoteriaMexicana.Logic
         public int  CartasRestantes => _cartas.Count;
         public bool EstaAgotado     => _cartas.Count == 0;
 
-        public Mazo(int? idCartaDoble = null)
+        public Mazo()
         {
             _rng    = new Random();
             _cartas = new List<Carta>();
-            Reiniciar(idCartaDoble);
+            Reiniciar();
         }
 
         public void Barajar()
@@ -44,13 +44,6 @@ namespace LoteriaMexicana.Logic
         {
             _cartas.Clear();
             _cartas.AddRange(CatalogoCartas.Todas);
-            
-            if (idCartaDoble.HasValue)
-            {
-                var cartaExtra = CatalogoCartas.Todas.FirstOrDefault(c => c.Id == idCartaDoble.Value);
-                if (cartaExtra != null)
-                    _cartas.Add(cartaExtra);
-            }
         }
     }
 }

@@ -23,33 +23,36 @@ namespace LoteriaMexicana.Logic
             Tapas    = new bool[FILAS, COLUMNAS];
         }
 
-        public void GenerarAleatorio(int? idCartaDoble = null)
+        public void GenerarAleatorio(bool cartaDoble = false)
         {
             var pool = Enumerable.Range(ID_MIN, ID_MAX).ToList();
-            if (idCartaDoble.HasValue)
-            {
-                pool.Remove(idCartaDoble.Value);
-            }
-
             var rng  = new Random();
+
             for (int i = pool.Count - 1; i > 0; i--)
             {
                 int j = rng.Next(i + 1);
                 (pool[i], pool[j]) = (pool[j], pool[i]);
             }
 
-            int cartasAExtraer = idCartaDoble.HasValue ? TOTAL_CASILLAS - 2 : TOTAL_CASILLAS;
-            var seleccionadas = pool.Take(cartasAExtraer).ToList();
+            List<int> seleccionadas;
 
-            if (idCartaDoble.HasValue)
+            if (cartaDoble)
             {
-                seleccionadas.Add(idCartaDoble.Value);
-                seleccionadas.Add(idCartaDoble.Value);
+                int idCartaDoble = pool[rng.Next(pool.Count)];
+                pool.Remove(idCartaDoble);
+                seleccionadas = pool.Take(TOTAL_CASILLAS - 2).ToList();
+                seleccionadas.Add(idCartaDoble);
+                seleccionadas.Add(idCartaDoble);
+
                 for (int i = seleccionadas.Count - 1; i > 0; i--)
-                {
+                { 
                     int j = rng.Next(i + 1);
                     (seleccionadas[i], seleccionadas[j]) = (seleccionadas[j], seleccionadas[i]);
                 }
+            }
+            else
+            {
+                seleccionadas = pool.Take(TOTAL_CASILLAS).ToList();
             }
 
             LlenarMatriz(seleccionadas.ToArray());
